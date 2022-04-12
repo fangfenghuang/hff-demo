@@ -1,0 +1,13 @@
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkPolicy
+metadata:
+  name:  global-egress-deny
+spec:
+  namespaceSelector: ! has(allow-all)
+  order: 2002
+  types:
+  - Egress
+  egress:
+  - action: Deny
+    destination:
+      selector: area == 'global-egress-deny'

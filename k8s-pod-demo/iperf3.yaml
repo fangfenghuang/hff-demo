@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: netperf-server
+  annotations:
+    kubernetes.io/egress-bandwidth: 1M
+    kubernetes.io/ingress-bandwidth: 1M
+spec:
+  containers:
+  - image: sirot/netperf-latest
+    command: ["/bin/sh","-c","netserver -p 4444 -4; iperf3 -s -i 1;"]
+    imagePullPolicy: IfNotPresent
+    name: netperf
+    ports:
+    - name: netperf-port
+      containerPort: 4444
+    - name: iperf-port
+      containerPort: 5210
+  restartPolicy: Always
+
+
+
+
+'''
+# 注： 
+- pod创建后修改annotation无效，需要重启pod才生效
+- 如果不是docker而是使用containerd作为runtime，需要containerd 1.4版本才能支持。
+
+参考：https://www.jianshu.com/p/d69e445cdb7a
+
+# 测试命令：
+iperf3 -c 10.19.0.13
+
+tc qdisc show
+'''

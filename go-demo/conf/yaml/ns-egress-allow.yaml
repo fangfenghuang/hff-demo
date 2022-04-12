@@ -1,0 +1,21 @@
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkPolicy
+metadata:
+  name:  ns-egress-allow
+spec:
+  order: 2001
+  types:
+  - Egress
+  egress:
+  - action: Allow
+    source: 
+      namespaceSelector: name == "hff"
+    destination:
+      nets: 
+      - 1.1.0.0/16
+  - action: Allow
+    source: 
+      namespaceSelector: name == "hff1"
+    destination:
+      nets: 
+      - 1.2.0./16

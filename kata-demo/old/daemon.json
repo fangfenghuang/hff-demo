@@ -1,0 +1,18 @@
+{
+  "registry-mirrors": ["https://registry.docker-cn.com", "https://7bezldxe.mirror.aliyuncs.com"], 
+  "max-concurrent-downloads": 10,
+  "log-driver": "json-file",
+  "log-level": "warn",
+  "log-opts": {
+    "max-size": "100m",
+    "max-file": "3"
+    },
+  "data-root": "/app/docker",
+  "runtimes": {
+    "kata-runtime": {
+      "path": "/usr/bin/kata-runtime"
+    }
+  },
+  "insecure-registries": ["harbor.caih.com","harbor.caih.local","10.208.11.110","harbor.caih.local"]
+}
+

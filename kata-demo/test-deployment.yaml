@@ -1,0 +1,411 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-deployment
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: test-deployment
+  template:
+    metadata:
+      labels:
+        app: test-deployment
+    spec:
+      runtimeClassName: kata-containers
+      volumes:
+      - emptyDir: {}
+        name: empty-dir
+      containers:
+      - image: nginx
+        securityContext:
+          privileged: true
+        imagePullPolicy: IfNotPresent
+        name: nginx
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /foo
+          name: empty-dir
+          subPath: bar
+      initContainers:
+      - args:
+        - -c
+        - mkdir -p /foo/bar && touch /foo/bar/HELLOTHERE
+        command:
+        - bash
+        image: nginx
+        name: touchfile
+        volumeMounts:
+        - mountPath: /foo
+          name: empty-dir
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-kata
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-kata
+  template:
+    metadata:
+      labels:
+        app: test-kata
+    spec:
+      runtimeClassName: kata-containers
+      containers:
+      - image: nginx
+        securityContext:
+          privileged: true
+        imagePullPolicy: IfNotPresent
+        name: nginx
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources:
+          requests:
+            memory: "3000Mi"
+            cpu: "3"
+          limits:
+            memory: "3000Mi"
+            cpu: "3"
+      - image: vish/stress
+        securityContext:
+          privileged: true
+        imagePullPolicy: IfNotPresent
+        name: cpu-stress-kata
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources:
+          requests:
+            memory: "1000Mi"
+            cpu: "2"
+          limits:
+            memory: "1000Mi"
+            cpu: "2"
+        args:
+        - -cpus
+        - "1"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-kata
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-kata
+  template:
+    metadata:
+      labels:
+        app: test-kata
+    spec:
+      runtimeClassName: kata-containers
+      - image: vish/stress
+        securityContext:
+          privileged: true
+        imagePullPolicy: IfNotPresent
+        name: cpu-stress-kata
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        args:
+        - -cpus
+        - "1"
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-kata
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-kata
+  template:
+    metadata:
+      labels:
+        app: test-kata
+    spec:
+      runtimeClassName: kata-containers
+      containers:
+      - image: vish/stress
+        securityContext:
+          privileged: true
+        imagePullPolicy: IfNotPresent
+        name: cpu-stress-kata
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources:
+          requests:
+            memory: "1000Mi"
+            cpu: "2"
+          limits:
+            memory: "1000Mi"
+            cpu: "2"
+        args:
+        - -cpus
+        - "1"
+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-kata
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-kata
+  template:
+    metadata:
+      labels:
+        app: test-kata
+    spec:
+      runtimeClassName: kata-containers
+      containers:
+      - image: vish/stress
+        securityContext:
+          privileged: true
+        imagePullPolicy: IfNotPresent
+        name: cpu-stress-kata
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources:
+          requests:
+          limits:
+            memory: "1000Mi"
+            cpu: "2"
+        args:
+        - -cpus
+        - "5"
+
+
+
+        
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-hostnetwork
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-kata
+  template:
+    metadata:
+      labels:
+        app: test-kata
+    spec:
+      hostNetwork: true
+      runtimeClassName: kata-containers
+      containers:
+      - image: nginx
+        imagePullPolicy: IfNotPresent
+        name: nginx
+        ports:
+        - containerPort: 80
+          protocol: TCP
+
+
+---ok
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dind-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dind-test
+  template:
+    metadata:
+      labels:
+        app: dind-test
+    spec:
+      runtimeClassName: kata-containers
+      containers:
+      - name: docker
+        image: docker:20.10-dind
+        command: ["sh", "-c"]
+        args:
+        - if [[ $(df -PT /var/lib/docker | awk 'NR==2 {print $2}') == virtiofs ]]; then
+            apk add e2fsprogs &&
+            truncate -s 20G /tmp/disk.img &&
+            mkfs.ext4 /tmp/disk.img &&
+            mount /tmp/disk.img /var/lib/docker; fi &&
+          dockerd-entrypoint.sh;
+        securityContext:
+          privileged: true
+ 
+
+---ok
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dind-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dind-test
+  template:
+    metadata:
+      labels:
+        app: dind-test
+    spec:
+      runtimeClassName: kata-containers
+      containers:
+      - name: dind
+        image: 'docker:stable-dind'
+        command:
+        - dockerd
+        - --host=unix:///var/run/docker.sock
+        - --host=tcp://0.0.0.0:8000
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - mountPath: /var/run
+          name: cache-dir
+      - name: clean-ci
+        image: 'docker:stable'
+        volumeMounts:
+        - mountPath: /var/run
+          name: cache-dir
+      volumes:
+      - name: cache-dir
+        emptyDir: {}
+
+--- 挂本地不行
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dind-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dind-test
+  template:
+    metadata:
+      labels:
+        app: dind-test
+    spec:
+      runtimeClassName: kata-containers
+      containers:
+      - name: clean-ci
+        image: 'docker:stable'
+        volumeMounts:
+        - name: docker-sock-volume
+          mountPath: /var/run/docker.sock
+        securityContext:
+          privileged: true
+      volumes:
+      - name: docker-sock-volume
+        hostPath:
+          path: /var/run/docker.sock
+          type: File
+
+/ # docker images
+Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?
+
+
+
+--- 不行？？？初始化时间久
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dind-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dind-test
+  template:
+    metadata:
+      labels:
+        app: dind-test
+    spec:
+      runtimeClassName: kata-containers
+      containers:
+      - name: docker
+        image: docker:20.10-dind
+        command: ["sh", "-c"]
+        args:
+        - if [[ $(df -PT /var/lib/docker | awk 'NR==2 {print $2}') == virtiofs ]]; then
+            apk add e2fsprogs &&
+            truncate -s 20G /tmp/disk.img &&
+            mkfs.ext4 /tmp/disk.img &&
+            mount /tmp/disk.img /var/lib/docker; fi &&
+          dockerd-entrypoint.sh;
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: cache-dir
+          mountPath: /var/run
+      - name: clean-ci
+        image: 'docker:stable'
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: cache-dir
+          mountPath: /var/run
+      volumes:
+      - name: cache-dir
+        emptyDir: {}
+
+
+
+
+
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: test-crictl
+spec:
+  selector:
+    matchLabels:
+      app: test-crictl
+  template:
+    metadata:
+      labels:
+        app: test-crictl
+    spec:
+      volumes:
+        - name: a
+          hostPath:
+            path: /usr/bin/crictl
+            type: File
+        - name: b
+          hostPath:
+            path: /usr/bin/ctr
+            type: File
+        - name: c
+          hostPath:
+            path: /run/containerd/containerd.sock
+            type: File
+      containers:
+        - name: test
+          image: nginx
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: a
+              mountPath: /usr/bin/crictl
+            - name: b
+              mountPath: /usr/bin/ctr
+            - name: c
+              mountPath: /run/containerd/containerd.sock

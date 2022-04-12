@@ -1,0 +1,25 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: apache
+  namespace: default
+  labels:
+    name: apache
+spec:
+  runtimeClassName: kata-containers
+  selector:
+    matchLabels:
+      name: apache
+  template:
+    metadata:
+      labels:
+        name: apache
+    spec:
+      containers:
+      - name: apache
+        image: httpd
+        command: ["ab","-c 30","-n 100000"]
+        args: ["http://10.241.102.146/"]
+        ports:
+        - name: http
+          containerPort: 80

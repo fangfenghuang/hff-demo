@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sysbench-test
+spec:
+  runtimeClassName: kata-containers
+  containers:
+  - image: dotnetdr/sysbench:0.5
+    imagePullPolicy: IfNotPresent
+    name: sysbench
+
+
+
+
+
+

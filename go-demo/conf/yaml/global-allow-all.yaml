@@ -1,0 +1,23 @@
+---
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkPolicy
+metadata:
+  name: global-allow-all
+spec:
+  order: 2004
+  namespaceSelector: has(open-policy) && ! has(allow-all)
+  types:
+  - Ingress
+  - Egress
+  ingress:
+  - action: Deny
+    source:
+      namespaceSelector: has(open-policy) && ! has(allow-all)
+    destination:
+      namespaceSelector: has(open-policy) && ! has(allow-all)
+  egress:
+  - action: Deny
+    source:
+      destination: has(open-policy) && ! has(allow-all)
+    destination:
+      namespaceSelector: has(open-policy) && ! has(allow-all)

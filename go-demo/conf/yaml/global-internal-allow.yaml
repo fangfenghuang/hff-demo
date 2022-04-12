@@ -1,0 +1,22 @@
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkPolicy
+metadata:
+  name: global-internal-allow
+spec:
+  namespaceSelector: has(open-policy)
+  order: 2003
+  types:
+  - Ingress
+  - Egress
+  ingress:
+  - action: Allow
+    source:
+      namespaceSelector: name == "hff"
+    destination:
+      namespaceSelector: name == "hff"
+  egress:
+  - action: Allow
+    source:
+      namespaceSelector: name == "hff"
+    destination:
+      namespaceSelector: name == "hff"

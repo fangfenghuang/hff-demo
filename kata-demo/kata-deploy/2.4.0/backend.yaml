@@ -1,0 +1,26 @@
+---
+    spec:
+      volumes:
+        - name: cicd-config
+          configMap:
+            name: cicd
+            defaultMode: 420
+            optional: false
+        - name: docker-cache-dir
+          emptyDir: {}
+      containers:
+        - name: dind
+          image: 'docker:stable-dind'
+          command:
+            - dockerd
+            - --host=unix:///var/run/docker.sock
+            - --host=tcp://0.0.0.0:8000
+          securityContext:
+            privileged: true
+          volumeMounts:
+          - mountPath: /var/run
+            name: docker-cache-dir
+        - name: backend
+          volumeMounts:
+          - mountPath: /var/run
+            name: docker-cache-dir

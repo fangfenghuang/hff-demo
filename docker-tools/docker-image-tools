@@ -1,0 +1,4 @@
+
+# sysbench
+ctr -n k8s.io run  -t --rm docker.io/ljishen/sysbench:latest sysbench cpu run
+

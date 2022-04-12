@@ -1,0 +1,9 @@
+apiVersion: projectcalico.org/v3
+kind: GlobalNetworkSet
+metadata:
+  name: area-global-egress-deny
+  labels:
+    area: global-egress-deny
+spec:
+  nets:
+  - 127.0.0.1

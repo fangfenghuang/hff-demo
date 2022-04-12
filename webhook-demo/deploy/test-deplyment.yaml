@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-webhook-iperf
+spec:
+  selector:
+    matchLabels:
+      app: test-webhook-iperf
+  template:
+    metadata:
+      labels:
+        app: test-webhook-iperf
+    spec:
+      containers:
+        - image: sirot/netperf-latest
+          command: ["/bin/sh","-c","netserver -p 4444 -4; iperf3 -s -i 1;"]
+          imagePullPolicy: IfNotPresent
+          name: netperf
+          ports:
+          - name: netperf-port
+            containerPort: 4444
+          - name: iperf-port
+            containerPort: 5210
+        restartPolicy: Always

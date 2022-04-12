@@ -1,0 +1,184 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stress
+  labels:
+    app: stress
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stress
+  template:
+    metadata:
+      labels:
+        app: stress
+    spec:
+      runtimeClassName: kata-containers
+      containers:
+      - image: vish/stress
+        name: stress
+        resources:
+          limits:
+            cpu: "2"
+            memory: "500Mi"
+          requests:
+            cpu: "0.5"
+            memory: "250Mi"
+        args:
+        - -cpus
+        - "1"
+        - -mem-total
+        - "400Mi"
+        - -mem-alloc-size
+        - "100Mi"
+        - -mem-alloc-sleep
+        - "1s"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-kata
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      run: nginx-kata
+  template:
+    metadata:
+      labels:
+        run: nginx-kata
+    spec:
+      runtimeClassName: kata-containers
+      containers:
+      - image: nginx
+        name: nginx
+        resources:
+          limits:
+            cpu: "4"
+            memory: "4Gi"
+          requests:
+            cpu: "4"
+            memory: "4Gi"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hostpath-test
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      run: hostpath-test
+  template:
+    metadata:
+      labels:
+        run: hostpath-test
+    spec:
+      runtimeClassName: kata-containers
+      containers:
+      - image: nginx
+        name: hostpath-test
+        volumeMounts:
+          - mountPath: /hff
+            name: data
+      volumes:
+      - hostPath:
+          path: /hff
+        name: data
+
+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-kata
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      run: nginx-kata
+  template:
+    metadata:
+      labels:
+        run: nginx-kata
+    spec:
+      runtimeClassName: kata-containers
+      containers:
+      - image: nginx
+        name: nginx
+        resources:
+          limits:
+            cpu: "4"
+            memory: "4Gi"
+          requests:
+            cpu: "4"
+            memory: "4Gi"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-runc
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      run: nginx-runc
+  template:
+    metadata:
+      labels:
+        run: nginx-runc
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+        resources:
+          limits:
+            cpu: "4"
+            memory: "4Gi"
+          requests:
+            cpu: "4"
+            memory: "4Gi"
+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stress
+  labels:
+    app: stress
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stress
+  template:
+    metadata:
+      labels:
+        app: stress
+    spec:
+      runtimeClassName: kata-containers
+      containers:
+      - image: vish/stress
+        name: stress
+        resources:
+          limits:
+            cpu: "2"
+            memory: "2Gi"
+          requests:
+            cpu: "2"
+            memory: "2Gi"
+        args:
+        - -cpus
+        - "2"
+        - -mem-total
+        - "1Gi"
+        - -mem-alloc-size
+        - "100Mi"
+        - -mem-alloc-sleep
+        - "1s"
