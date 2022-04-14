@@ -4,7 +4,7 @@
 
 
 # 创建一个kata容器
-```
+```bash
 [root@rqy-k8s-1 hff]# kubectl get deployments.apps
 
 NAME              READY   UP-TO-DATE   AVAILABLE   AGE
@@ -26,8 +26,9 @@ hostpath-kata-57477fb8f7-ls6mq   0m           0Mi
 [root@rqy-k8s-1 hff]# kubectl describe node | grep hostpath-kata
 
  default                     hostpath-kata-57477fb8f7-ls6mq                0 (0%)        0 (0%)      0 (0%)           0 (0%)          93m
-
-## **crictl pods**
+```
+## crictl pods
+```bash
 
 [root@rqy-k8s-1 hff]# crictl pods
 
@@ -36,7 +37,7 @@ POD ID              CREATED             STATE     �
 1b482bb4613ba       2 hours ago         Ready               hostpath-kata-57477fb8f7-ls6mq               default                0                   kata
 ```
 ## crictl ps
-```
+```bash
 [root@rqy-k8s-1 hff]# crictl ps
 
 CONTAINER           IMAGE               CREATED             STATE               NAME                        ATTEMPT             POD ID
@@ -44,7 +45,7 @@ CONTAINER           IMAGE               CREATED     
 e2a82f5b7b98b       2fb6fc2d97e10       2 hours ago         Running             hostpath-kata               0                   1b482bb4613ba
 ```
 ## crictl stats
-```
+```bash
 [root@rqy-k8s-1 hff]# crictl stats e2a82f5b7b98b
 
 CONTAINER           CPU %               MEM                 DISK                INODES
@@ -52,14 +53,14 @@ CONTAINER           CPU %               MEM       
 e2a82f5b7b98b       0.00                397.3kB             4.096kB             15
 ```
 ## 获取sandboxID
-```
+```bash
 [root@rqy-k8s-1 hff]# crictl inspect e2a82f5b7b98b | grep sandboxID
  "sandboxID": "1b482bb4613ba606894d30370fe7637610a495d9b3a504bc36e9aa292db9a0f0",
 ```
 ## 宿主机进程
 ![](../images/20220330183449.png)
 
-```
+```bash
 [root@rqy-k8s-1 kbuser]# ps -ef | grep 6d46a824dae01c4675da741ca2aff98b1e7eb005103d10cf0c3af6f758c97afe
 
 root      27665  25163  0 15:16 pts/1    00:00:00 grep --color=auto 6d46a824dae01c4675da741ca2aff98b1e7eb005103d10cf0c3af6f758c97afe
@@ -78,7 +79,7 @@ root     275447 275433  0 Mar10 ?        00:11:47 /opt/kata/libexec/
 
 
 ## ip netns exec cni-c1dea1e8-5df7-f16e-4810-e51d8895ca20 ip a
-```
+```bash
 [root@rqy-k8s-1 hff]# ip netns exec cni-c1dea1e8-5df7-f16e-4810-e51d8895ca20 ip a
 
 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
@@ -157,17 +158,16 @@ qdisc ingress ffff: dev tap0_kata parent ffff:fff1 ----------------
 ```
 
 ## 宿主机目录
->
-/run/kata-containers/shared/sandboxes/
-/run/vc/vm/
-/run/vc/sbs/
-/sys/fs/cgroup/(memory、devices、cpu,cpuacct...)
-/sys/fs/cgroup/systemd/kata_overhead/
-/app/docker/containerd/
+>/run/kata-containers/shared/sandboxes/
+>/run/vc/vm/
+>/run/vc/sbs/
+>/sys/fs/cgroup/(memory、devices、cpu,cpuacct...)
+>/sys/fs/cgroup/systemd/kata_overhead/
+>/app/docker/containerd/
 
 ## vm_pid
 
-```
+```bash
 ctr -n k8s.io run --runtime io.containerd.kata.v2 -t --rm docker.io/dotnetdr/sysbench:0.5 hfftest sh
 
 [root@localhost sysbench]# cat /proc/20092/status
@@ -270,7 +270,7 @@ nonvoluntary_ctxt_switches:     4
 ```
 
 # 进入kata容器
-```
+```bash
 
 [root@rqy-k8s-1 kbuser]# kubectl exec -it hostpath-kata-57477fb8f7-ls6mq sh
 
@@ -280,7 +280,7 @@ nonvoluntary_ctxt_switches:     4
 ```
 
 ## df -h
-```
+```bash
 
 root@hostpath-kata-7949f86f8c-8gfqj:/# df -h
 
@@ -301,6 +301,7 @@ shm             992M     0  992M   0% /dev/shm
 tmpfs           992M   12K  992M   1% /run/secrets/kubernetes.io/serviceaccount
 ```
 ## lsblk
+```bash
 
 root@hostpath-kata-7949f86f8c-8gfqj:/# lsblk
 
@@ -309,9 +310,9 @@ NAME      MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
 pmem0     259:0    0  126M  1 disk
 
 `-pmem0p1 259:1    0  124M  1 part
-
-## ip addr
 ```
+## ip addr
+```bash
 / # ip addr
 
 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue qlen 1000
@@ -341,7 +342,7 @@ pmem0     259:0    0  126M  1 disk
 
 
 ## mount
-```
+```bash
 root@netperf-server-kata:/# mount
 
 none on / type virtiofs (rw,relatime)
@@ -401,7 +402,7 @@ proc on /proc/irq type proc (ro,relatime)
 proc on /proc/sys type proc (ro,relatime)
 ```
 # 进入kata vm
-```
+```bash
 [root@rqy-k8s-1 kbuser]# kata-runtime exec 1b482bb4613ba606894d30370fe7637610a495d9b3a504bc36e9aa292db9a0f0
 
 bash: grep: command not found
@@ -419,7 +420,7 @@ bash-5.1#
 bash-5.1#
 ```
 ## lsblk
-```
+```bash
 bash-5.1# lsblk
 NAME      MAJ:MIN RM  SIZE RO TYPE MOUNTPOINTS
 pmem0     259:0    0  126M  1 disk

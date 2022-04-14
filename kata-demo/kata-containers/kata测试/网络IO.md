@@ -1,15 +1,16 @@
  [TOC]
 
 # 网络IO对比
-> netperf-server-default             1/1     Running   0          18d     10.192.181.19    rqy-k8s-1 
-netperf-server-kata                1/1     Running   0          18d 10.192.173.212 rqy-k8s-3 
-netperf-server-runc                1/1     Running   0          18d 10.192.173.213 rqy-k8s-3 
-
+```bash
+netperf-server-default             1/1     Running   0          18d     10.192.181.19    rqy-k8s-1 
+netperf-server-kata                1/1     Running   0          18d     10.192.173.212   rqy-k8s-3 
+netperf-server-runc                1/1     Running   0          18d     10.192.173.213   rqy-k8s-3 
+```
 
 
 ## iperf3
 
-```
+```yaml
 apiVersion: v1
 kind: Pod
 metadata:
@@ -60,18 +61,16 @@ spec:
 
  
 
-```
+```yaml
 annotations:
 
   kubernetes.io/egress-bandwidth: 1M
   kubernetes.io/ingress-bandwidth: 1M
 ```
-
-> [ ID] Interval      Transfer   Bandwidth    Retr
->
-> [  4]  0.00-10.00  sec  23.7 MBytes  19.8 Mbits/sec   2       sender
->
-> [  4]  0.00-10.00  sec  21.8 MBytes  18.2 Mbits/sec          receiver
-
+```bash
+[ ID] Interval      Transfer   Bandwidth    Retr
+[  4]  0.00-10.00  sec  23.7 MBytes  19.8 Mbits/sec   2       sender
+[  4]  0.00-10.00  sec  21.8 MBytes  18.2 Mbits/sec          receiver
+```
  
 

@@ -35,3 +35,79 @@
 * 没有/opt/kata/share/defaults/kata-containers/configuration-qemu.toml文件，kata pod可以起来，但是ctr run不行
 * 增加/etc/kata-containers/configuration.toml后，kata pod cpu数变成3，但是ctr run cpu为1
 
+
+## ctr依赖/configuration-qemu.toml路径问题
+```bash
+/etc/kata-containers/configuration.toml已存在，为测试删除了默认配置文件，但是containerd配置保留
+
+[root@localhost ~]# cat  /etc/containerd/config.toml 
+      [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.kata]
+        runtime_type = "io.containerd.kata.v2"
+        privileged_without_host_devices = true
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.kata.options]
+           ConfigPath = "/etc/kata-containers/configuration.toml"
+
+[root@localhost ~]# kubectl get runtimeclasses.node.k8s.io kata-containers -o yaml | grep handler
+handler: kata
+
+[root@localhost ~]# ctr -n k8s.io run --runtime io.containerd.kata.v2 -t --rm docker.io/library/busybox:latest hfftest dmesg 
+ctr: Cannot find usable config file (file /opt/kata/share/defaults/kata-containers/configuration-qemu.toml does not exist): not found
+
+
+[root@rqy-k8s-1 kbuser]# ll /usr/local/bin/containerd-shim-kata-v2
+lrwxrwxrwx. 1 root root 43 Mar 18 11:31 /usr/local/bin/containerd-shim-kata-v2 -> /usr/local/bin/containerd-shim-kata-qemu-v2
+```
+
+
+## kata-deploy会修改containerd配置
+即便部署前已修改，配置会替换：
+>[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.kata]
+        runtime_type = "io.containerd.kata.v2"
+        [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.kata.options]
+           ConfigPath = "/opt/kata/share/defaults/kata-containers/configuration.toml"
+
+https://github.com/containerd/containerd/issues/3073
+https://github.com/containerd/containerd/issues/5006
+
+## 规避方法
+（无效）
+设置KATA_CONF_FILE环境变量??
+```
+[root@localhost ~]# export KATA_CONF_FILE=/etc/kata-containers/configuration.toml
+[root@localhost ~]# env | grep KATA_CONF_FILE
+KATA_CONF_FILE=/etc/kata-containers/configuration.toml
+[root@localhost ~]# ctr -n k8s.io run --runtime io.containerd.kata.v2 -t --rm docker.io/library/busybox:latest hfftest dmesg
+ctr: Cannot find usable config file (file /opt/kata/share/defaults/kata-containers/configuration-qemu.toml does not exist): not found
+```
+（无效）
+```
+[root@localhost ~]# ctr -n k8s.io run --env KATA_CONF_FILE=/etc/kata-containers/configuration.toml --runtime io.containerd.kata.v2 -t --rm docker.io/library/busybox:latest hfftest dmesg
+ctr: Cannot find usable config file (file /opt/kata/share/defaults/kata-containers/configuration-qemu.toml does not exist): not found
+```
+
+（无效）
+修改containerd配置：
+```
+[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.kata]
+  runtime_type = "io.containerd.kata.v2"
+  privileged_without_host_devices = true
+  pod_annotations = ["io.katacontainers.*"]
+  [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.kata.options]
+    ConfigPath = "/etc/kata-containers/configuration.toml"
+```
+
+（有效）
+```
+[root@localhost ~]# cat /usr/local/bin/containerd-shim-kata-qemu-v2
+#!/usr/bin/env bash
+KATA_CONF_FILE=/opt/kata/share/defaults/kata-containers/configuration-qemu.toml /opt/kata/bin/containerd-shim-kata-v2 "$@"
+改为：
+[root@localhost ~]# cat /usr/local/bin/containerd-shim-kata-qemu-v2
+#!/usr/bin/env bash
+KATA_CONF_FILE=/etc/kata-containers/configuration.toml /opt/kata/bin/containerd-shim-kata-v2 "$@"
+```
+（有效）
+```bash
+ln -s /opt/kata/bin/containerd-shim-kata-v2 /usr/local/bin/containerd-shim-kata-v2 
+```
+

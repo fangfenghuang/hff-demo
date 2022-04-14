@@ -19,7 +19,7 @@
 
 # kata容器不支持挂载主机路径的docker.sock
 
-```
+```bash
 10:54:05  Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?
 
 bash-4.4# docker images
@@ -43,7 +43,7 @@ goPushNewImageCommandStr := "docker push "
 
 ## 解决方案
 1. DinD
-```
+```yaml
 ---
 
 apiVersion: apps/v1
@@ -184,8 +184,8 @@ docker pull : ctr -n k8s.io image pull imgname 或 crictl pull
 docker save: ctr -n k8s.io image export app.tar imgname
 
 
-
->kind: Deployment
+```yaml
+kind: Deployment
 apiVersion: apps/v1
 metadata:
   name: test-crictl
@@ -222,9 +222,9 @@ spec:
               mountPath: /usr/bin/ctr
             - name: c
               mountPath: /run/containerd/containerd.sock
-
-注意：需要显示配置默认的endpoints:
 ```
+注意：需要显示配置默认的endpoints:
+```bash
 crictl config runtime-endpoint unix:///run/containerd/containerd.sock
 crictl config image-endpoint unix:///run/containerd/containerd.sock
 ```

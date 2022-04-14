@@ -13,7 +13,7 @@ default_maxvcpus
 default_memory=2048（默认）
 
 ## 通过注释：
-```
+```bash
 [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.kata]
  runtime_type = "io.containerd.kata.v2"
  privileged_without_host_devices = false
@@ -45,7 +45,7 @@ default_memory=2048（默认）
 
 ### 设置podOverHead
 
-```
+```yaml
 kind: RuntimeClass
 apiVersion: node.k8s.io/v1beta1
 metadata:
@@ -83,7 +83,8 @@ kata-runtime中复用了**—cpus**选项实现了CPU热插拔的功能，通过
 [https://github.com/kata-containers/kata-containers/blob/main/docs/how-to/how-to-use-virtio-mem-with-kata.md](https://github.com/kata-containers/kata-containers/blob/main/docs/how-to/how-to-use-virtio-mem-with-kata.md)
 
 使用以下命令将容器内存限制设置为 2g，并将 VM 的内存大小设置为其 default_memory + 2g。
-
+```bash
 $ sudo crictl update --memory $((2*1024*1024*1024)) $cid
+```
 
 内存资源当前只支持热插，不支持内存热拔。

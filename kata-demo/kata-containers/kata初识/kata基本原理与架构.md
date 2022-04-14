@@ -82,7 +82,7 @@
 
 ​		kata-containers它本质上就一个容器的runtime。只要实现了OCI的接口就可以接上那些容器管理工具，只要实现了CRI接口，就可以接上k8s。
 
-​		所以kata-containers实现了OCI接口，，并且符合CRI规范，就可以无缝衔接上容器生态。
+​		所以kata-containers与 OCI 运行时规范兼容，可以通过 CRI-O 和 Containerd 实现与 Kubernetes CRI 进行无缝协作。（Shim API）
 
 ## 和传统的runC的区别
 
@@ -119,7 +119,7 @@
 
 - 只支持 shimv2，因此少了 proxy 和 shim 组件
 
-- 在 Kata Containers 2.x 中，核心组件只剩下两个：runtime 和 agent ，且都在 kata-containers 这个 repo 下。
+- 在 Kata Containers 2.x 中，核心组件只剩下两个：runtime 和agent ，且都在 kata-containers 这个 repo 下。
 
 在kata1.x， kata-container可以当做docker的一个插件，启动kata-container可以通过docker命令，但是kata2.x之后，kata去掉了docker的cli，不能通过docker启动kata runtime容器。
 
@@ -130,30 +130,34 @@
 ![](../images/20220330151947.png)
 
 
-### Shimv2 API实现原理
 **pod创建过程，接口调用原理**
 
 - 提交创建请求
 - api server将api对象被存储到etcd
 - Controller manager创建pod
 - Scheduler监听pod变化，执行调度，绑定节点
-- Kubelet监听pod绑定事件，接管pod> 请求 containerd运行pod的所有容器
-- Containerd 通过cri接口请求 Containerd runtime（runc/kata）
+- Kubelet监听pod绑定事件，接管pod> 通过CRI接口请求 containerd运行pod的所有容器（kubelet作为cri client）
+- Containerd通过shim api请求containerd-shim-kata-v2创建容器
+
+>- 当用户指定运行时名称时， containerd 将其转换为 shim 的二进制名称，如：io.containerd.runc.v1->containerd-shim-runc-v1或io.containerd.kata.v2->containerd-shim-kata-v2；
+>- 每个shim必须实现一个start子命令。此命令将启动新的shims。
+>- 启动命令必须向 shim 返回一个地址，以便 containerd 为容器操作发出 API 请求。
+
+> 在 shimv2 之前 Kata 1.x，我们需要为每个容器和 Pod 沙箱本身创建一个 containerd-shim 和 kata-shim，以及在 VSOCK 不可用时创建一个可选的 kata-proxy。借助 shimv2，Kubernetes 可以启动 Pod 和 OCI 兼容的容器，每个 Pod 可以使用一个 Shim（shimv2）而不是 2N+1 Shim，并且即使没有 VSOCK 也不用使用独立的 kata-proxy 程序。
 
 
 
-### CRI Shim
-在docker里，dockershim负责响应cri请求；
-如果你用的不是 Docker，要去走一个叫remote的模式，就是你需要写一个 CRI Shim，去响应这个CRI请求
+```bash
+root     22324  0.0  0.2 946312 23760 ?        Sl   Apr12   0:21 /opt/kata/bin/containerd-shim-kata-v2 -namespace k8s.io -address /run/containerd/containerd.sock -publish-binary /usr/bin/containerd -id 3b54b3b02fc7f6905d01aedfc4eb209cfb11fd9136006ed6e11e1e26c0f48562
+root     26580  0.0  0.0 113364  5276 ?        Sl   Apr12   0:24 /usr/bin/containerd-shim-runc-v2 -namespace k8s.io -id 721153525c46112a713cbca788389791eb2a6e5ad526f43df162fc4cf7656c44 -address /run/containerd/containerd.sock
+```
 
-katav1.x的时候，
+- kata-agent 生成容器进程，kata-agent 是在虚拟机内部作为守护程序运行的代理进程。kata-agent 使用 VIRTIO 串行或 VSOCK 接口在虚拟机中运行 ttRPC 服务器，该接口由 QEMU 生成一个 Socket 文件暴露给宿主机。shimv2 使用 ttRPC 协议与代理进程进行通信。该协议允许运行时将容器管理命令发送到代理进程。该协议还用于在容器和管理引擎（例如 CRI-O 或 Containerd）之间承载 I/O 流（stdout，stderr，stdin）。
 
-### CRI + containerd shimv2 (kata shimv2)
-
-https://www.sohu.com/a/283978522_465959
-
+- 对于任何给定的容器，该容器中的初始化过程和所有可能执行的命令以及它们相关的 I/O 流都需要通过 QEMU 导出的 VSOCK 接口。
 
 
+- qemu-system-x86_64
 
 
 
@@ -253,7 +257,7 @@ Kata容器虚拟机支持如下热插设备：
 
 - 用户创建容器
 
-- 容器管理器创建kata runtime
+- 容器管理器（containerd）创建kata runtime
 
 - kata-runtime加载配置文件，调用shimv2 API 
 
@@ -361,6 +365,16 @@ containerd是容器技术标准化之后的产物，为了能够兼容OCI标准�
 
 Kubelet 是一个 CRI 客户端，并期望 CRI 实现来处理接口的服务端。CRI-O和Containerd是依赖OCI兼容运行时来管理容器实例的 CRI 实现。
 
+注意区分：
+
+## cri实现分类
+- CRI第一个实现就是k8s自己提供的针对Docker运行时的dockerShim，也是目前k8s使用docker的标准方式，已经集成在k8s的源码中
+- dockershim、CRI-containerd、CRI-O属于基于OCI的CRI
+
+
+
+
+
 ## Sandbox与Container
 Sandbox是一个统一、基本的隔离空间，一个虚拟机中只有一个Sandbox，但是该Sandbox内可以有多个容器，这就对应了Kubernetes Pod的模型；对于Docker来说，一般一个Sandbox内只运行一个Container。无论是哪种情况，Sandbox的ID与内部第一个容器的ID相同。
 
@@ -383,11 +397,11 @@ docker由 docker-client ,dockerd,containerd,docker-shim,runc组成，所以conta
 
 调用链
 
-**Docker 作为 k8s 容器运行时，调用关系如下：
+**Docker 作为 k8s 容器运行时，调用关系如下：**
 
 kubelet --> docker shim （在 kubelet 进程中） --> dockerd --> containerd
 
-**Containerd 作为 k8s 容器运行时，调用关系如下：
+**Containerd 作为 k8s 容器运行时，调用关系如下：**
 
 kubelet --> cri plugin（在 containerd 进程中） --> containerd
 
@@ -453,11 +467,6 @@ Kubernetes 当然做不到，其中最大的两个原因是：
 - Virtlet是把VM当成一个CRI来跑了，是按Pod API来定义一个VM，所以VM的很多功能比如热迁移等，Virtlet是没法满足VM的全部特性的，算是一个**70%功能的VM**
 
 
-
-## runc
-- runc set up 起来这些 namespace、Cgroup 这些东西, “搭”出来所谓的一个应用和需要的容器 
-## kata
-KataContainer 负责帮忙把 hypervisor 这些东西 set up 起来
 
 
 

@@ -3,7 +3,8 @@
 系统管理程序 hypervisor将启动一个虚拟机，该虚拟机包括最小的 虚拟机内核和虚拟机镜像。
 	
 # 配置
->[hypervisor.qemu]
+```bash
+[hypervisor.qemu]
 path = "/opt/kata/bin/qemu-system-x86_64"
 kernel = "/opt/kata/share/kata-containers/vmlinux.container"
 image = "/opt/kata/share/kata-containers/kata-containers.img"
@@ -11,11 +12,11 @@ machine_type = "q35"
 [Kernel]
  Path = "/opt/kata/share/kata-containers/vmlinux-5.15.23-89"
  Parameters = "systemd.unit=kata-containers.target systemd.mask=systemd-networkd.service systemd.mask=systemd-networkd.socket scsi_mod.scan=none agent.debug_console agent.debug_console_vport=1026"
- >[Image]
+ [Image]
  Path = "/opt/kata/share/kata-containers/kata-clearlinux-latest.image"
- >[Initrd]
+ [Initrd]
  Path = ""
-
+```
  
 
 # Guest kernel
@@ -79,11 +80,13 @@ Kata 运行时配置文件中的initrd和image选项之一**必须**设置，但
 [https://github.com/kata-containers/kata-containers/tree/main/tools/packaging/kernel](https://github.com/kata-containers/kata-containers/tree/main/tools/packaging/kernel)
 
 例子：
->$ ./build-kernel.sh -v 5.10.25 -g nvidia -f -d setup
+```bash
+$ ./build-kernel.sh -v 5.10.25 -g nvidia -f -d setup
 · -v 5.10.25：指定来宾内核版本。
 · -g nvidia: 构建一个支持 Nvidia GPU 的来宾内核。
 · -f:.config即使内核目录已经存在也强制生成文件。
 · -d: 启用 bash 调试模式。
+```
 
 添加补丁：${GOPATH}/src/github.com/kata-containers/kata-containers/tools/packaging/kernel/patches/
 
@@ -94,7 +97,7 @@ Kata 运行时配置文件中的initrd和image选项之一**必须**设置，但
 [https://github.com/kata-containers/kata-containers/tree/main/tools/osbuilder](https://github.com/kata-containers/kata-containers/tree/main/tools/osbuilder)
 
 # 修改内核参数
-```
+```bash
 [Kernel]
  Path = "/opt/kata/share/kata-containers/vmlinux-5.15.23-89"
  Parameters = "systemd.unit=kata-containers.target systemd.mask=systemd-networkd.service systemd.mask=systemd-networkd.socket scsi_mod.scan=none agent.debug_console agent.debug_console_vport=1026"
@@ -111,7 +114,7 @@ kernel_modules =[ “ e1000e InterruptThrottleRate=3000,3000,3000 EEE=1 ” , �
 
 ## 使用注释
 
-```
+```bash
 annotations:
   io.katacontainers.config.agent.kernel_modules: "e1000e EEE=1; i915"spec:
 ```
@@ -120,7 +123,7 @@ annotations:
 [https://github.com/kata-containers/kata-containers/blob/main/docs/how-to/how-to-use-sysctls-with-kata.md](https://github.com/kata-containers/kata-containers/blob/main/docs/how-to/how-to-use-sysctls-with-kata.md)
 
 sysctl 使用 pod 的 securityContext 在 pod 上设置。securityContext 适用于同一 pod 中的所有容器。
-```
+```yaml
 apiVersion: v1kind: Podmetadata:
 name: sysctl-examplespec:
 securityContext:

@@ -27,7 +27,7 @@ Container运行在Sandbox环境中，Container采用共享宿主机网络命名�
 
 ​		流量进入宿主机后首先由物理网络通过网桥或者路由接入到网络命名空间，网络命名空间中在使用tc策略牵引流量到tap网络接口，然后再通过tap网络接口把流量送入虚拟化环境中，最后虚拟化环境中的容器共享宿主机网络命名空间后就可以在容器中拿到网络流量
 
-```
+```bash
 [root@rqy-k8s-1 hff]# ip netns exec cni-c1dea1e8-5df7-f16e-4810-e51d8895ca20 ip a
 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
  link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
@@ -90,7 +90,7 @@ qdisc ingress ffff: dev tap0_kata parent ffff:fff1 ----------------
 
 # 存储
 
-
+从 Kata Containers 的 2.0 版本开始，virtio-fs是默认的文件系统共享机制。
 
 [storage](https://github.com/kata-containers/kata-containers/blob/main/docs/design/architecture/storage.md)
 
@@ -104,11 +104,11 @@ qdisc ingress ffff: dev tap0_kata parent ffff:fff1 ----------------
 
 ## kata文件系统
 
-	对于kata容器，第一步跟常规容器类似。主要差异在后面的步骤。且对于不同的文件系统驱动，在kata中的处理流程也不同。分为两类devicemapper和其他（如overlay(2)、aufs等）
+对于kata容器，第一步跟常规容器类似。主要差异在后面的步骤。且对于不同的文件系统驱动，在kata中的处理流程也不同。分为两类devicemapper和其他（如overlay(2)、aufs等）
 
 - devicemapper 由于该文件系统驱动将容器和镜像的每一层都做成有依赖关系的快照，最终的结果是一个block设备，因此，在kata内部，会将该设备直接传给VM，并在VM中将其挂载到目标挂载点，形成容器的文件系统，并在VM中创建容器，其中VM外部的操作由kata-runtime（shim v1）或 kata-contaienrs-shimv2(shim v2)完成，VM内部有kata-agent完成。
 
-- 其他（如overlay(2)、aufs等） 对于非devicemapper的文件系统驱动，由于在host中，已经形成了文件系统，而非设备，因此只能通过某种方式，让VM可以访问host中的容器文件系统，并在VM中创建容器。在kata中，前期主要使用了9pfs技术，由于使用了类似远程访问，因此，容器对于文件系统的读写性能较差。在最近的版本中，增加了virtio-fs(共享文件系统)技术，来改善读写性能，然而该技术目前还没有加入Linux内核，需要用户手动安装。
+- 其他（如overlay(2)、aufs等） 对于非devicemapper的文件系统驱动，由于在host中，已经形成了文件系统，而非设备，因此只能通过某种方式，让VM可以访问host中的容器文件系统，并在VM中创建容器。在kata中，前期主要使用了9pfs技术，由于使用了类似远程访问，因此，容器对于文件系统的读写性能较差。在最近的版本中，增加了virtio-fs(共享文件系统)技术，来改善读写性能。
 
 - 除了容器文件系统本身，容器还可以配置volume，即可以将host上的某个目录挂载到容器中，供容器使用，这对于普通容器相对比较容器。 对于kata容器，由于voluem本身是host上的一个路径，因此也是常规文件系统，因此，也需要通过9pfs或virtio-fs技术，将该路径映射到VM中，再将其挂载的对应的容器文件系统。
 
@@ -116,7 +116,7 @@ qdisc ingress ffff: dev tap0_kata parent ffff:fff1 ----------------
 
 1. virtio-9p 没有针对虚拟化场景提供优化
 2. virtio-fs 利用了 hypervisor 和虚拟机处于相同节点的优势
-3. - DAX 特性，文件内容映射到宿主机的内存窗口，客户机直接访问宿主机的 page cache
+3. DAX 特性，文件内容映射到宿主机的内存窗口，客户机直接访问宿主机的 page cache
    - 减少内存占用，因为客户机 cache 已经被绕过了
 4. 相比 virtio-9p，virtio-fs 具有更好的 POSIX 合规性
 
@@ -152,7 +152,7 @@ Kata Containers 使用以下步骤来设置 DAX 映射：
 
 - 虚拟机内核命令行在启用了 DAX 功能的情况下挂载此 NVDIMM 设备，从而允许直接页面映射和访问，从而绕过了虚拟机页面缓存。
 
-```
+```sh
 [root@rqy-k8s-1 kbuser]# cat /opt/kata/share/defaults/kata-containers/configuration.toml | grep virtio_fs_cache_size
 virtio_fs_cache_size = 0
 ```
