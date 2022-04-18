@@ -10,6 +10,9 @@
 
 * Discuss with me on the [issue](https://github.com/huangfangfeng/go-demo/issues)
 
+# doc
+understanding-go/README.md
+
 
 ## License
 

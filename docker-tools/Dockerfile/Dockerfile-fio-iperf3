@@ -1,0 +1,33 @@
+FROM sirot/netperf-latest
+
+COPY ./fio-2.1.10.tar.gz /fio-2.1.10.tar.gz 
+RUN mv /etc/apt/sources.list /etc/apt/sources.list.bak && \
+    echo "deb http://mirrors.aliyun.com/ubuntu/ trusty main restricted universe multiverse" >/etc/apt/sources.list && \
+    echo "deb http://mirrors.aliyun.com/ubuntu/ trusty-security main restricted universe multiverse" >>/etc/apt/sources.list && \
+    echo "deb http://mirrors.aliyun.com/ubuntu/ trusty-updates main restricted universe multiverse" >>/etc/apt/sources.list && \
+    echo "deb http://mirrors.aliyun.com/ubuntu/ trusty-proposed main restricted universe multiverse" >>/etc/apt/sources.list  && \
+    echo "deb http://mirrors.aliyun.com/ubuntu/ trusty-backports main restricted universe multiverse" >>/etc/apt/sources.list  && \
+    echo "deb-src http://mirrors.aliyun.com/ubuntu/ trusty main restricted universe multiverse" >>/etc/apt/sources.list  && \
+    echo "deb-src http://mirrors.aliyun.com/ubuntu/ trusty-security main restricted universe multiverse" >>/etc/apt/sources.list  && \
+    echo "deb-src http://mirrors.aliyun.com/ubuntu/ trusty-updates main restricted universe multiverse" >>/etc/apt/sources.list  && \
+    echo "deb-src http://mirrors.aliyun.com/ubuntu/ trusty-proposed main restricted universe multiverse" >>/etc/apt/sources.list  && \
+    echo "deb-src http://mirrors.aliyun.com/ubuntu/ trusty-backports main restricted universe multiverse" >>/etc/apt/sources.list
+
+
+RUN apt-get -qqy update \
+    && apt-get install  \
+    && apt-get install gcc  \
+    && apt-get install libaio-dev  --yes --force-yes
+
+RUN  tar -zxvf /fio-2.1.10.tar.gz \
+    && cd /fio-2.1.10 \
+    && ./configure \
+    && make \
+    && make install \
+    && rm -rf /fio-2.1.10.tar.gz
+
+
+    
+
+# docker build -t hff-iperf3-fio:v0.1 .
+
