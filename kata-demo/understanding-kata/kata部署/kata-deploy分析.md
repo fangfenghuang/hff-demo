@@ -1,23 +1,16 @@
- #  daemonset：
- ```yaml
-image: quay.io/kata-containers/kata-deploy:latest
-  command:
-       - bash
-       - '-c'
-       - /opt/kata-artifacts/scripts/kata-deploy.shinstall
-   lifecycle:
-       preStop:
-          exec:
-              command:
-                 - bash
-                 - '-c'
-                - /opt/kata-artifacts/scriptskata-deploy.sh cleanup
-   securityContext:
-       privileged: false
-  volumeMounts:
-  -  name: systemd
-      mountPath: /run/systemd
-```
+ 在节点上安装必要的 Kata 二进制文件、配置文件和虚拟机组件。安装后，DaemonSet 添加一个节点标签katacontainers.io/kata-runtime=true并重新配置 CRI-O 或 containerd 以注册三个runtimeClasses：kata-clh、kata-qemu和kata-fc。作为最后一步，DaemonSet 重新启动 CRI-O 或 containerd。删除后，DaemonSet 会删除 Kata 二进制文件和 VM 工件，并将节点标签更新为katacontainers.io/kata-runtime=cleanup.
+ 
+
+ ## Host artifacts:
+cloud-hypervisor, firecracker, qemu, and supporting binaries
+containerd-shim-kata-v2
+kata-collect-data.sh
+kata-runtime
+## Virtual Machine artifacts:
+kata-containers.img and kata-containers-initrd.img
+vmlinuz.container and vmlinuz-virtiofs.container
+
+ 
 
 # 部署kata-deploy之后
 ```bash
