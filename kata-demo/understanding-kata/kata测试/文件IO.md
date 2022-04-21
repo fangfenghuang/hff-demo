@@ -48,30 +48,23 @@ rqy-k8s-3: oflag=direct
 10240000+0 records out
 41943040000 bytes (39.1GB) copied, 312.486063 seconds, 128.0MB/s
 ```
+
 ## fio
 
 ### 随机读写：
+```
+echo 3 > /proc/sys/vm/drop_caches
 
-> echo 3 > /proc/sys/vm/drop_caches
->
-> ctr -n k8s.io run --runtime io.containerd.kata.v2 -t --rm docker.io/xridge/fio:latest hfftest sh
->
->  随机读： 
->
-> fio --filename=/tmp/test -direct=1 -iodepth 1 -thread -rw=randread  -ioengine=libaio -bs=512k  -numjobs=8 --size=1G -group_reporting -name=randread
->
-> 顺序读： 
->
-> fio --filename=/tmp/test --direct=1 --iodepth 1 --thread --rw=read --ioengine=psync --bs=512k --size=1G --numjobs=8 --group_reporting --name=mytest
->
-> 随机写： 
->
-> fio --filename=/tmp/test --direct=1 --iodepth 1 --thread --rw=randwrite --ioengine=psync --bs=512k --size=1G --numjobs=8 --group_reporting --name=mytest 
->
-> 顺序写： 
->
-> fio --filename=/tmp/test --direct=1 --iodepth 1 --thread --rw=write --ioengine=psync --bs=512k --size=1G --numjobs=8 --group_reporting --name=mytest 
-
+ctr -n k8s.io run --runtime io.containerd.kata.v2 -t --rm docker.io/xridge/fio:latest hfftest sh
+随机读： 
+fio --filename=/tmp/test -direct=1 -iodepth 1 -thread -rw=randread  -ioengine=libaio -bs=512k  -numjobs=8 --size=1G -group_reporting -name=randread
+顺序读： 
+fio --filename=/tmp/test --direct=1 --iodepth 1 --thread --rw=read --ioengine=psync --bs=512k --size=1G --numjobs=8 --group_reporting --name=mytest
+随机写： 
+fio --filename=/tmp/test --direct=1 --iodepth 1 --thread --rw=randwrite --ioengine=psync --bs=512k --size=1G --numjobs=8 --group_reporting --name=mytest 
+顺序写： 
+fio --filename=/tmp/test --direct=1 --iodepth 1 --thread --rw=write --ioengine=psync --bs=512k --size=1G --numjobs=8 --group_reporting --name=mytest 
+```
 rqy-k8s-3: --direct=1
 
 |        | 随机读1G | 顺序读1G | 随机写1G          | 顺序写1G         |
@@ -299,3 +292,126 @@ Threads fairness:
  events (avg/stddev):           312.5000/7.57
  execution time (avg/stddev):   0.2721/0.00
 ```
+
+---------------------------------------------------------------
+
+# fio I/O 性能
+参考用例：https://os.51cto.com/article/618526.html
+原文： https://www.stackhpc.com/kata-io-1.html
+
+**pod:**
+```yaml
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-kata
+spec:
+  runtimeClassName: kata-containers
+  containers:
+  - name: fio
+    image: docker.io/xridge/fio:latest
+    volumeMounts:
+    - mountPath: /test
+      name: test-volume
+    command:
+    - sleep
+    - "999m"
+  volumes:
+  - name: test-volume
+    hostPath:
+      path: /root/hff/test/kata
+      type: Directory
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-runc
+spec:
+  containers:
+  - name: fio
+    image: docker.io/xridge/fio:latest
+    volumeMounts:
+    - mountPath: /test
+      name: test-volume
+    command:
+    - sleep
+    - "999m"
+  volumes:
+  - name: test-volume
+    hostPath:
+      path: /root/hff/test/runc
+      type: Directory
+
+
+```
+**测试命令：**
+>echo 3 > /proc/sys/vm/drop_caches
+export FIO_RW=write
+fio fio_jobfile.fio --fallocate=none --runtime=30 --directory=/test --output-format=json+ --blocksize=65536 --output=${FIO_RW}.json
+
+
+**fio_jobfile.fio**
+```bash
+[global] 
+; Parameters common to all test environments 
+; Ensure that jobs run for a specified time limit, not I/O quantity 
+time_based=1 
+; To model application load at greater scale, each test client will maintain 
+; a number of concurrent I/Os. 
+ioengine=libaio 
+iodepth=8 
+; Note: these two settings are mutually exclusive 
+; (and may not apply for Windows test clients) 
+direct=1 
+buffered=0 
+; Set a number of workers on this client 
+thread=0 
+numjobs=4 
+group_reporting=1 
+; Each file for each job thread is this size 
+filesize=32g 
+size=32g 
+filename_format=$jobname.$jobnum.$filenum
+[fio-job] 
+; FIO_RW is read, write, randread or randwrite 
+rw=${FIO_RW} 
+```
+
+## 10.208.11.110(hostpath)
+写完后不删除文件，不清cache
+|        | 读 | 写| 随机写 | 随机读 |
+| ------ | --------- | -------- | --------- |--------- |
+| kata   | 4391  | 744 |  417    | 964 |
+| runc   | 6937 |  825 |  1768   | 6762 |
+
+>为什么顺序读非常久才有输出
+有些测试数据在重复测试之间差距较大
+
+写完后不删除文件，清cache
+|        | 写 | 读| 随机写 | 随机读 |
+| ------ | --------- | -------- | --------- |--------- |
+| kata   | 352  |    |       |   |
+| runc   |    |    |       |   |
+
+
+
+
+## k8s-phy01(hostpath)
+写完后删除文件，不清cache
+|        | 随机写 | 随机读| 写 | 读 |
+| ------ | --------- | -------- | --------- |--------- |
+| kata   |  6587 |     |         |           |
+| runc   |      |     |         |           |
+| 物理机 |       |     |         |            |
+
+
+
+增加cpu mem后继续测
+
+[root@telecom-k8s-phy01 hff]# df -h /hff/test
+Filesystem               Size  Used Avail Use% Mounted on
+/dev/mapper/centos-root  494G   32G  462G   7% /
+
+

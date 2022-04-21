@@ -32,3 +32,6 @@ cp virtctl-v0.30.0-linux-x86_64 virtctl
 chmod +x virtctl
 mv virtctl /usr/local/bin/virtctl
 ```
+
+
+# cdi

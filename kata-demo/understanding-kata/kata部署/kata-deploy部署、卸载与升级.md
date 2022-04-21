@@ -10,31 +10,26 @@
 
   containerd配置参考《config.toml》、《0-containerd.conf》
 
-# ansible部署
+# 部署
+- 创建kata资源：kata-rbac.yaml、kata-deploy.yaml，创建runtimeClass： runtimeClass.yaml
+```bash
+$ kubectl apply -f kata-rbac.yaml
+$ kubectl apply -f kata-deploy.yaml
 
-- ~~~生成configuration.toml分发到各个kata节点（所有节点）~~~
+$ kubectl -n kube-system wait --timeout=10m --for=condition=Ready -l name=kata-deploy pod
 
-- 创建kata资源：kata-rbac.yaml、kata-deploy.yaml
- 
-注：可以增加节点标签设置kata-deploy daemonset节点亲和性设置kata节点
-
-- 创建runtimeClass： runtimeClass.yaml
+$ kubectl apply -f kata-runtimeClasses.yaml
+```
 
 - 各个kata节点（所有节点）创建软链接：
-
 ```bash
 ln -s /opt/kata/bin/kata-runtime /usr/bin/kata-runtime
 ln -s /opt/kata/bin/kata-monitor /usr/bin/kata-monitor
-ln -s /opt/kata/bin/containerd-shim-kata-v2 /usr/local/bin/containerd-shim-kata-v2 
 ```
 
->注意：
-~~~这里containerd-shim-kata-v2的软链接默认指向/usr/local/bin/containerd-shim-kata-qemu-v2，也可以参考/usr/local/bin/containerd-shim-kata-qemu-v2写，定义KATA_CONF_FILE指定配置文件，否则通过ctr run使用的将是KATA_CONF_FILE的配置~~~
+注：可以增加节点标签设置kata-deploy daemonset节点亲和性设置kata节点
 
-- 等待部署完成
-```bash
-kubectl -n kube-system wait --timeout=10m --for=condition=Ready -l name=kata-deploy pod
-```
+
 
 
 ## 检查：
@@ -51,16 +46,17 @@ kubectl -n kube-system wait --timeout=10m --for=condition=Ready -l name=kata-dep
 - 删除kata资源：kata-rbac.yaml、kata-deploy.yaml、runtimeClass.yaml
 ```bash
 $ kubectl delete -f kata-deploy.yaml
+
 $ kubectl -n kube-system wait --timeout=10m --for=delete -l name=kata-deploy pod
 
-
 $ kubectl apply -f kata-cleanup.yaml
+# The cleanup daemon-set will run a single time, cleaning up the node-label, which makes it difficult to check in an automated fashion. This process should take, at most, 5 minutes.
+# kubectl get pod -n kube-system | grep kubelet-kata-cleanup
 
 $ kubectl delete -f kata-cleanup.yaml
 $ kubectl delete -f kata-rbac.yaml
 $ kubectl delete -f kata-runtimeClasses.yaml
 
 ```
-- ~~~删除kata节点configuration.toml文件~~~
 
 # 升级(TODO)

@@ -127,6 +127,57 @@ qdisc ingress ffff: dev tap0_kata parent ffff:fff1 ----------------
 
 ## virtiofs
 
+- 所有数据都要经过virtiofs，不管是镜像数据还是⽹络存储卷。虚拟机要和宿主机数据 交互，就必须要穿过qemu，virtiofs就是穿过qemu的桥梁，提供共享⽂件机制。
+- guest和host数据传输都是通过virtio-fs，包括容器镜像和容器卷，读写权限取决于virtiofsd进程的权限。
+- 数据相关的操作最终还是在宿主机上，⽐如镜像层的合并，仍然是containerd的存储层插件snapshotter完成，底层仍然是调⽤了overlayfs⽂件系统
+
+
+
+
+```bash
+[root@localhost hff]# ps -ef | grep 55e043c4c5eacba28c8d97a2aa96f76f153c5f9e49a1ad51f1031237002cf774
+root     28330     1  0 10:49 ?        00:00:00 /opt/kata/bin/containerd-shim-kata-v2 -namespace k8s.io -address /run/containerd/containerd.sock -publish-binary /usr/bin/containerd -id 55e043c4c5eacba28c8d97a2aa96f76f153c5f9e49a1ad51f1031237002cf774
+root     28342 28330  0 10:49 ?        00:00:00 /opt/kata/libexec/kata-qemu/virtiofsd --syslog -o cache=auto -o no_posix_lock -o source=/run/kata-containers/shared/sandboxes/55e043c4c5eacba28c8d97a2aa96f76f153c5f9e49a1ad51f1031237002cf774/shared --fd=3 -f --thread-pool-size=1 -o announce_submounts
+root     28348     1  0 10:49 ?        00:00:00 /opt/kata/bin/qemu-system-x86_64 -name sandbox-55e043c4c5eacba28c8d97a2aa96f76f153c5f9e49a1ad51f1031237002cf774 -uuid 27f404fa-1887-4529-bbbb-df1525845c98 -machine q35,accel=kvm,kernel_irqchip=on,nvdimm=on -cpu host,pmu=off -qmp unix:/run/vc/vm/55e043c4c5eacba28c8d97a2aa96f76f153c5f9e49a1ad51f1031237002cf774/qmp.sock,server=on,wait=off -m 2048M,slots=10,maxmem=8773M -device pci-bridge,bus=pcie.0,id=pci-bridge-0,chassis_nr=1,shpc=off,addr=2,io-reserve=4k,mem-reserve=1m,pref64-reserve=1m -device virtio-serial-pci,disable-modern=false,id=serial0 -device virtconsole,chardev=charconsole0,id=console0 -chardev socket,id=charconsole0,path=/run/vc/vm/55e043c4c5eacba28c8d97a2aa96f76f153c5f9e49a1ad51f1031237002cf774/console.sock,server=on,wait=off -device nvdimm,id=nv0,memdev=mem0,unarmed=on -object memory-backend-file,id=mem0,mem-path=/opt/kata/share/kata-containers/kata-clearlinux-latest.image,size=134217728,readonly=on -device virtio-scsi-pci,id=scsi0,disable-modern=false -object rng-random,id=rng0,filename=/dev/urandom -device virtio-rng-pci,rng=rng0 -device vhost-vsock-pci,disable-modern=false,vhostfd=3,id=vsock-3099871275,guest-cid=3099871275 -chardev socket,id=char-3352582b4396a8ee,path=/run/vc/vm/55e043c4c5eacba28c8d97a2aa96f76f153c5f9e49a1ad51f1031237002cf774/vhost-fs.sock -device vhost-user-fs-pci,chardev=char-3352582b4396a8ee,tag=kataShared -netdev tap,id=network-0,vhost=on,vhostfds=4,fds=5 -device driver=virtio-net-pci,netdev=network-0,mac=7e:c7:e5:c6:8c:d7,disable-modern=false,mq=on,vectors=4 -rtc base=utc,driftfix=slew,clock=host -global kvm-pit.lost_tick_policy=discard -vga none -no-user-config -nodefaults -nographic --no-reboot -daemonize -object memory-backend-file,id=dimm1,size=2048M,mem-path=/dev/shm,share=on -numa node,memdev=dimm1 -kernel /opt/kata/share/kata-containers/vmlinux-5.15.26-90 -append tsc=reliable no_timer_check rcupdate.rcu_expedited=1 i8042.direct=1 i8042.dumbkbd=1 i8042.nopnp=1 i8042.noaux=1 noreplace-smp reboot=k console=hvc0 console=hvc1 cryptomgr.notests net.ifnames=0 pci=lastbus=0 root=/dev/pmem0p1 rootflags=dax,data=ordered,errors=remount-ro ro rootfstype=ext4 quiet systemd.show_status=false panic=1 nr_cpus=8 systemd.unit=kata-containers.target systemd.mask=systemd-networkd.service systemd.mask=systemd-networkd.socket scsi_mod.scan=none -pidfile /run/vc/vm/55e043c4c5eacba28c8d97a2aa96f76f153c5f9e49a1ad51f1031237002cf774/pid -smp 1,cores=1,threads=1,sockets=8,maxcpus=8
+root     28355 28342  0 10:49 ?        00:00:00 /opt/kata/libexec/kata-qemu/virtiofsd --syslog -o cache=auto -o no_posix_lock -o source=/run/kata-containers/shared/sandboxes/55e043c4c5eacba28c8d97a2aa96f76f153c5f9e49a1ad51f1031237002cf774/shared --fd=3 -f --thread-pool-size=1 -o announce_submounts
+```
+
+每⼀个 virtiofsd进程的fd参数都等于3，因为⽂件描述符是进程独⽴的，STDIO占 据了0，1和2，那么virtiofsd第⼀个可⽤的fd num就是3了 
+
+# 存储配置
+## 存储路径：
+/run/kata-containers/shared/sandboxes/
+/run/vc/vm/
+/run/vc/sbs/
+
+```bash
+[root@localhost ~]# find / -name hfftest0413-etc
+/run/kata-containers/shared/sandboxes/3b54b3b02fc7f6905d01aedfc4eb209cfb11fd9136006ed6e11e1e26c0f48562/mounts/c7c33d3c7666933c6f1c182bb49bf850c5ca99f08b4595b0f37e6f817bb52768/rootfs/etc/hfftest0413-etc
+/run/kata-containers/shared/sandboxes/3b54b3b02fc7f6905d01aedfc4eb209cfb11fd9136006ed6e11e1e26c0f48562/shared/c7c33d3c7666933c6f1c182bb49bf850c5ca99f08b4595b0f37e6f817bb52768/rootfs/etc/hfftest0413-etc
+/run/containerd/io.containerd.runtime.v2.task/k8s.io/c7c33d3c7666933c6f1c182bb49bf850c5ca99f08b4595b0f37e6f817bb52768/rootfs/etc/hfftest0413-etc
+/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/199015/fs/etc/hfftest0413-etc
+```
+
+## 与存储相关的参数
+### cache
+- virtio_fs_cache = "auto"
+- virtio_fs_cache_size = 0
+```
+- none
+Metadata, data, and pathname lookup are not cached in guest. They are
+always fetched from host and any changes are immediately pushed to host.
+- auto
+Metadata and pathname lookup cache expires after a configured amount of
+ time (default is 1 second). Data is cached while the file is open (close to open consistency).
+- always
+Metadata, data, and pathname lookup are cached in guest and never expire.
+```
+
+
+
+## 共享内存目录file_mem_backend
+
+
 
 
 ### virtiofsd已知问题汇总
@@ -134,7 +185,13 @@ qdisc ingress ffff: dev tap0_kata parent ffff:fff1 ----------------
 [https://github.com/kata-containers/runtime/issues/2797](https://github.com/kata-containers/runtime/issues/2797)
 
 
-## DAX
+## DAX(直接访问)
+将主机buffffer map到客户机中，guest使⽤与主机相同 的物理内存，即使它使⽤不同的虚拟地址。如果没有 DAX，内存使⽤量可能会⾮常⼤，因为每个 guest都有⾃⼰的⽂件缓冲区。 
+
+- 需要单独编译qemu?qemu5.0-virtiofs-dax
+- configuration.toml 设置virtio_fs_cache_size dax window ⼤⼩ 
+
+
 
 
 

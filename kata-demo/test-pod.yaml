@@ -1,184 +1,71 @@
 ---
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: v1
+kind: Pod
 metadata:
-  name: stress
-  labels:
-    app: stress
+  name: test-kata
 spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: stress
-  template:
-    metadata:
-      labels:
-        app: stress
-    spec:
-      runtimeClassName: kata-containers
-      containers:
-      - image: vish/stress
-        name: stress
-        resources:
-          limits:
-            cpu: "2"
-            memory: "500Mi"
-          requests:
-            cpu: "0.5"
-            memory: "250Mi"
-        args:
-        - -cpus
-        - "1"
-        - -mem-total
-        - "400Mi"
-        - -mem-alloc-size
-        - "100Mi"
-        - -mem-alloc-sleep
-        - "1s"
+  nodeName: telecom-k8s-phy01
+  runtimeClassName: kata-containers
+  containers:
+  - name: fio
+    image: docker.io/xridge/fio:latest
+    imagePullPolicy: IfNotPresent
+    volumeMounts:
+    - mountPath: /test
+      name: test-volume
+    command:
+    - sleep
+    - "999d"
+    resources:
+      limits:
+        memory: "5Gi"
+        cpu: "5"
+  volumes:
+  - name: test-volume
+    hostPath:
+      path: /hff/test/kata
+      type: Directory
 
 ---
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: v1
+kind: Pod
 metadata:
-  name: nginx-kata
-  namespace: default
+  name: test-runc
 spec:
-  selector:
-    matchLabels:
-      run: nginx-kata
-  template:
-    metadata:
-      labels:
-        run: nginx-kata
-    spec:
-      runtimeClassName: kata-containers
-      containers:
-      - image: nginx
-        name: nginx
-        resources:
-          limits:
-            cpu: "4"
-            memory: "4Gi"
-          requests:
-            cpu: "4"
-            memory: "4Gi"
+  nodeName: telecom-k8s-phy01
+  containers:
+  - name: fio
+    image: docker.io/xridge/fio:latest
+    imagePullPolicy: IfNotPresent
+    volumeMounts:
+    - mountPath: /test
+      name: test-volume
+    command:
+    - sleep
+    - "999d"
+    resources:
+      limits:
+        memory: "5Gi"
+        cpu: "5"
+  volumes:
+  - name: test-volume
+    hostPath:
+      path: /hff/test/runc
+      type: Directory
 
 ---
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: v1
+kind: Pod
 metadata:
-  name: hostpath-test
-  namespace: default
+  name: netperf-server
 spec:
-  selector:
-    matchLabels:
-      run: hostpath-test
-  template:
-    metadata:
-      labels:
-        run: hostpath-test
-    spec:
-      runtimeClassName: kata-containers
-      containers:
-      - image: nginx
-        name: hostpath-test
-        volumeMounts:
-          - mountPath: /hff
-            name: data
-      volumes:
-      - hostPath:
-          path: /hff
-        name: data
-
-
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: nginx-kata
-  namespace: default
-spec:
-  selector:
-    matchLabels:
-      run: nginx-kata
-  template:
-    metadata:
-      labels:
-        run: nginx-kata
-    spec:
-      runtimeClassName: kata-containers
-      containers:
-      - image: nginx
-        name: nginx
-        resources:
-          limits:
-            cpu: "4"
-            memory: "4Gi"
-          requests:
-            cpu: "4"
-            memory: "4Gi"
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: nginx-runc
-  namespace: default
-spec:
-  selector:
-    matchLabels:
-      run: nginx-runc
-  template:
-    metadata:
-      labels:
-        run: nginx-runc
-    spec:
-      containers:
-      - image: nginx
-        name: nginx
-        resources:
-          limits:
-            cpu: "4"
-            memory: "4Gi"
-          requests:
-            cpu: "4"
-            memory: "4Gi"
-
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: stress
-  labels:
-    app: stress
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: stress
-  template:
-    metadata:
-      labels:
-        app: stress
-    spec:
-      runtimeClassName: kata-containers
-      containers:
-      - image: vish/stress
-        name: stress
-        resources:
-          limits:
-            cpu: "2"
-            memory: "2Gi"
-          requests:
-            cpu: "2"
-            memory: "2Gi"
-        args:
-        - -cpus
-        - "2"
-        - -mem-total
-        - "1Gi"
-        - -mem-alloc-size
-        - "100Mi"
-        - -mem-alloc-sleep
-        - "1s"
+  containers:
+  - image: sirot/netperf-latest
+    command: ["/bin/sh","-c","netserver -p 4444 -4; iperf3 -s -i 1;"]
+    imagePullPolicy: IfNotPresent
+    name: netperf
+    ports:
+    - name: netperf-port
+    containerPort: 4444
+    - name: iperf-port
+    containerPort: 5210

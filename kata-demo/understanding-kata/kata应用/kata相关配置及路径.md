@@ -41,6 +41,45 @@ sed -i -e 's/^kernel_params = "\(.*\)"/kernel_params = "\1 agent.debug_console"/
 ## 注意配置文件问题
 https://github.com/kata-containers/kata-containers/blob/main/docs/how-to/containerd-kata.md
 
+## 1. [hypervisor.qemu]
+```
+path = "/usr/bin/qemu-system-x86_64" 指定 qemu 的路径
+kernel = "/usr/share/kata-containers/vmlinuz.container" 指定启动内核路径
+initrd = "/usr/share/kata-containers/kata-containers-initrd.img" 指定 initrd
+image = "/usr/share/kata-containers/kata-containers-centos.img" 指定系统盘，initrd 和 image 不可以同时配置，否则会出错
+kernel_params = "" 配置-append 参数，定制虚拟机内核启动参数
+firmware = "" 指定固件，影响 qemu 的-bios 参数
+machine_accelerators="" virtcontainers/qemu.go 的 getQemuMachine() 进行处理，加到 machine.Options 中，最终是加到-machine 参数中
+default_vcpus = 1 默认 vcpu 个数
+default_maxvcpus = 0  默认最大 vcpu 个数，设置为 0 时实际上时 240
+default_bridges = 1 默认 PCI 桥个数
+default_memory = 2048  VM 默认内存大小
+memory_slots = 10 内存插槽个数
+disable_block_device_use = false 是否禁用块设备
+block_device_driver = "virtio-scsi" 块设备驱动，可以是 virtio-scsi、virtio-blk 或 nvdimm
+#block_device_cache_set = true
+#block_device_cache_direct = true
+#block_device_cache_noflush = true  块设备是否设置 cache
+enable_iothreads = false  //enable_iothreas 当前仅针对 virtio-scsi 块设备生效
+#enable_mem_prealloc = true
+#enable_hugepages = true
+#file_mem_backend = ""  //这几个配置统一用于 kata-runtime qemu 插件启动虚拟机时的内存配置
+#enable_swap=true  //是否允许虚拟机内存 swap，以支持更大的虚拟机密度
+#enable_debug=false  //影响 guest kernel 内核启动，在 enable_debug 后，guest kernel 启动项会加上 systemd.show_status true systemd.log_level debug
+#disable_nesting_checks = true 虚拟机标志是否 nestedRun，即虚拟化嵌套
+msize=8192 9p fs msize 选项
+#use_vsock = true 是否使用 vsock
+#hotplug_vfio_on_root_bus = true 对于 vfio 设备，会挂在到 root bus 上，否则挂载到 PCI bridge 上, 默认是 false
+#disable_vhost_net = true 禁用 vhost_net
+#entropy_source= "/dev/urandom" 指定随机数发生器，默认为/dev/urandom,kata 启动虚拟机时会给虚拟机附加一个随机数发生器
+#guest_hook_path = "/usr/share/oci/hooks" guest 钩子函数执行路径,用于 OCI
+#enable_template = true 默认为 false，enable 后新的虚拟机从模板通过虚拟机克隆方式启动，所有 VM 共享相同的初始化 kernel、initramfs 和 agent 内存
+#enable_debug = true 默认为 false，enable 后，shim 将消息发往 system log
+#enable_tracing = true 默认为 false，用于跟踪
+#diable_new_netns=true 默认为 false，enable 后，runtime 不会再为 shim 和 hypervisor 进程创建一个网络 namespace，在 enable_netmon、网络模式采用 bridged 或者 macvtap 后不能 enable 该选项
+
+
+```
 
 # crictl
 
@@ -64,39 +103,6 @@ debug: false
 > /var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/
    原docker: 
    /app/docker/overlay2
-
-
-# 存储配置
-## 存储路径：
-/run/kata-containers/shared/sandboxes/
-/run/vc/vm/
-/run/vc/sbs/
-
-```bash
-[root@localhost ~]# find / -name hfftest0413-etc
-/run/kata-containers/shared/sandboxes/3b54b3b02fc7f6905d01aedfc4eb209cfb11fd9136006ed6e11e1e26c0f48562/mounts/c7c33d3c7666933c6f1c182bb49bf850c5ca99f08b4595b0f37e6f817bb52768/rootfs/etc/hfftest0413-etc
-/run/kata-containers/shared/sandboxes/3b54b3b02fc7f6905d01aedfc4eb209cfb11fd9136006ed6e11e1e26c0f48562/shared/c7c33d3c7666933c6f1c182bb49bf850c5ca99f08b4595b0f37e6f817bb52768/rootfs/etc/hfftest0413-etc
-/run/containerd/io.containerd.runtime.v2.task/k8s.io/c7c33d3c7666933c6f1c182bb49bf850c5ca99f08b4595b0f37e6f817bb52768/rootfs/etc/hfftest0413-etc
-/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/199015/fs/etc/hfftest0413-etc
-```
-
-# 与存储相关的参数
-
-## virtio_fs_cache = "auto"
-- none
-Metadata, data, and pathname lookup are not cached in guest. They are
-always fetched from host and any changes are immediately pushed to host.
-- auto
-Metadata and pathname lookup cache expires after a configured amount of
- time (default is 1 second). Data is cached while the file is open (close to open consistency).
-- always
-Metadata, data, and pathname lookup are cached in guest and never expire.
-
-## virtio_fs_cache_size = 0
-
-
-## 共享内存目录file_mem_backend
-
 
 
 # 修改sanbox(虚拟机)配置
