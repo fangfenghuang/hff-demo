@@ -19,17 +19,3 @@ spec:
   restartPolicy: Always
 
 
-
-
-'''
-# 注： 
-- pod创建后修改annotation无效，需要重启pod才生效
-- 如果不是docker而是使用containerd作为runtime，需要containerd 1.4版本才能支持。
-
-参考：https://www.jianshu.com/p/d69e445cdb7a
-
-# 测试命令：
-iperf3 -c 10.19.0.13
-
-tc qdisc show
-'''

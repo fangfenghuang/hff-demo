@@ -1,10 +1,11 @@
+# kata subPath emptyDir
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: test-deployment
 spec:
-  replicas: 4
+  replicas: 1
   selector:
     matchLabels:
       app: test-deployment
@@ -120,7 +121,7 @@ spec:
         args:
         - -cpus
         - "1"
-
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -221,7 +222,8 @@ spec:
           protocol: TCP
 
 
----ok
+---
+#ok
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -252,7 +254,8 @@ spec:
           privileged: true
  
 
----ok
+---
+#ok
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -289,7 +292,8 @@ spec:
       - name: cache-dir
         emptyDir: {}
 
---- 挂本地不行
+--- 
+#挂本地不行
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -319,12 +323,11 @@ spec:
           path: /var/run/docker.sock
           type: File
 
-/ # docker images
-Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?
 
 
 
---- 不行？？？初始化时间久
+---
+# 不行？？？初始化时间久
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -409,3 +412,59 @@ spec:
               mountPath: /usr/bin/ctr
             - name: c
               mountPath: /run/containerd/containerd.sock
+
+# fio
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-kata
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-kata
+  template:
+    metadata:
+      labels:
+        app: test-kata
+    spec:
+      runtimeClassName: kata-containers
+      - image: docker.io/xridge/fio:latest
+        securityContext:
+          privileged: true
+        imagePullPolicy: IfNotPresent
+        name: fio
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        args:
+        - -cpus
+        - "1"
+
+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-kata
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-kata
+  template:
+    metadata:
+      labels:
+        app: test-kata
+    spec:
+      hostNetwork: true
+      runtimeClassName: kata-containers
+      containers:
+      - image: nginx
+        imagePullPolicy: IfNotPresent
+        name: nginx
+        ports:
+        - containerPort: 80
+          protocol: TCP

@@ -1,3 +1,4 @@
+---
 apiVersion: v1
 kind: Pod
 metadata:
@@ -8,9 +9,5 @@ spec:
   - image: dotnetdr/sysbench:0.5
     imagePullPolicy: IfNotPresent
     name: sysbench
-
-
-
-
 
 

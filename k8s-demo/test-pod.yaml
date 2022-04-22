@@ -1,10 +1,13 @@
+
+# nodeName: telecom-k8s-phy01
+
+
 ---
 apiVersion: v1
 kind: Pod
 metadata:
   name: test-kata
 spec:
-  nodeName: telecom-k8s-phy01
   runtimeClassName: kata-containers
   containers:
   - name: fio
@@ -18,8 +21,8 @@ spec:
     - "999d"
     resources:
       limits:
-        memory: "5Gi"
-        cpu: "5"
+        memory: "2Gi"
+        cpu: "2"
   volumes:
   - name: test-volume
     hostPath:
@@ -32,7 +35,6 @@ kind: Pod
 metadata:
   name: test-runc
 spec:
-  nodeName: telecom-k8s-phy01
   containers:
   - name: fio
     image: docker.io/xridge/fio:latest
@@ -45,8 +47,8 @@ spec:
     - "999d"
     resources:
       limits:
-        memory: "5Gi"
-        cpu: "5"
+        memory: "2Gi"
+        cpu: "2"
   volumes:
   - name: test-volume
     hostPath:
@@ -66,6 +68,36 @@ spec:
     name: netperf
     ports:
     - name: netperf-port
-    containerPort: 4444
+      containerPort: 4444
     - name: iperf-port
-    containerPort: 5210
+      containerPort: 5210
+    resources:
+      limits:
+        memory: "5Gi"
+        cpu: "5"
+
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: netperf-server
+spec:
+  containers:
+  - image: vish/stress
+    imagePullPolicy: IfNotPresent
+    name: stress
+    ports:
+    - containerPort: 80
+      protocol: TCP
+    resources:
+      requests:
+        memory: "1000Mi"
+        cpu: "2"
+      limits:
+        memory: "1000Mi"
+        cpu: "2"
+    args:
+    - -cpus
+    - "1"
+
