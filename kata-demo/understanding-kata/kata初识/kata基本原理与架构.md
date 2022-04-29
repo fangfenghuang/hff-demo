@@ -356,22 +356,13 @@ RUNC只使用控制组(cgroups)来限制、优先化、控制和计算资源，�
 
 ## runc、runtime、docker、containerd、cri-o一些名词解释
 
-runC是一个根据OCI标准创建并运行容器的命令行工具（CLI tool）。
+runC是一个根据OCI标准创建并运行容器的命令行工具（CLI tool）(low-level runtime)。
 
 Docker就是基于runC创建的，简单地说，runC就是docker中最为核心的部分
 
 containerd是容器技术标准化之后的产物，为了能够兼容OCI标准，将容器运行时及其管理功能从Docker Daemon剥离。理论上，即使不运行dockerd，也能够直接通过containerd来管理容器。（当然，containerd本身也只是一个守护进程，容器的实际运行时由后面介绍的runC控制。）
 
-Kubelet 是一个 CRI 客户端，并期望 CRI 实现来处理接口的服务端。CRI-O和Containerd是依赖OCI兼容运行时来管理容器实例的 CRI 实现。
-
-注意区分：
-
-## cri实现分类
-- CRI第一个实现就是k8s自己提供的针对Docker运行时的dockerShim，也是目前k8s使用docker的标准方式，已经集成在k8s的源码中
-- dockershim、CRI-containerd、CRI-O属于基于OCI的CRI
-
-
-
+Kubelet 是一个CRI客户端，并期望CRI实现来处理接口的服务端。CRI-O和Containerd是依赖OCI兼容运行时来管理容器实例的CRI实现（high level runtime）。
 
 
 ## Sandbox与Container
@@ -474,4 +465,3 @@ Kubernetes 当然做不到，其中最大的两个原因是：
 # 参考资料
 
 https://github.com/kata-containers
-

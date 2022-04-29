@@ -8,12 +8,13 @@ kubectl cp -c cloud-loan-gate uat/cloud-786d84c554-p7jz7:app/logs/app/cloud.log 
 
 --no-preserve=false
 
-# !!!Important Note!!!
+## !!!Important Note!!!
 要求容器镜像中存在“tar”二进制文件。 如果“tar”不存在，“kubectl cp”将失败。  
 
 
-# 对于高级用例，如符号链接、通配符扩展或文件模式保存，考虑使用'kubectl exec'  
-```
+## 对于高级用例，如符号链接、通配符扩展或文件模式保存，考虑使用'kubectl exec'  
+使用 tar -cf - 将具有文件夹结构的数据转换成数据流，再通过 linux 管道接收这个数据流；通过 tar -xf - 将数据流转换成 linux 文件系统。
+
 # Copy /tmp/foo local file to /tmp/bar in a remote pod in namespace <some-namespace>
 tar cf - /tmp/foo | kubectl exec -i -n <some-namespace> <some-pod> -- tar xf - -C /tmp/ba
 
@@ -36,4 +37,9 @@ kubectl cp /tmp/foo <some-namespace>/<some-pod>:/tmp/ba
 kubectl cp <some-namespace>/<some-pod>:/tmp/foo /tmp/bar
 
 ```
+# kubectl exec
 
+
+
+## 参考：
+https://www.yfdou.com/archives/kuberneteszhi-kubectlexeczhi-ling-gong-zuo-yuan-li-shi-xian-copyhe-webshellyi-ji-filebrowser.html

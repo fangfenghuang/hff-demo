@@ -25,11 +25,12 @@ default_memory=2048（默认）
 
 ## SandboxCgroupOnly
 
-默认关闭：此时kata容器非业务负载的花销在另外的kata_overhead cgroup中，并且无限制，这样可能会导致资源无管控，占用过多主机资源，好处是业务不需评估非业务负载所需资源
+默认禁用：此时kata容器非业务负载开销在另外的kata_overhead cgroup中，并且无限制，这样可能会导致资源无管控，占用过多主机资源，好处是业务不需评估非业务负载所需资源
 
 如果开启，则非业务负载和业务负载在一个pod cgroup中，需要评估所有负载及开销，好处是隔离性更好，资源管控更好。
 
 ## PodOverhead
+PodOverhead作用于 Kata Containers 的额外开销，而不是业务负载
 
 ### 打开--feature-gates PodOverhead
 

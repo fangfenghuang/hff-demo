@@ -5,7 +5,7 @@
 
 2. cpu、内存性能损耗
 
-3. 资源开销
+3. 资源开销与负载
 
 4. 网络性能：见[[网络IO]]
 
@@ -13,7 +13,7 @@
 
 6. 已知问题验证
 
-7. 边界测试
+7. 资源限制
 
 8. 异常测试
 
@@ -41,7 +41,7 @@
 >
 > Guest Kernel: Linux clr-64b293ce5be44f6d9f521c20c5a36249 5.15.23 #2 SMP Mon Mar 7 22:16:36 UTC 2022 x86_64 GNU/Linux
 
-### **集群：**
+### 集群：
 
 **10.91.0.1-3（集群）**
 
@@ -217,8 +217,6 @@ Threads fairness:
 
 ## 空负载(1C2G)
 /proc/vm_pid/status
-百兆级别与兆级别
-
 |                                    | kata       | runc      |
 | ---------------------------------- | ---------- | --------- |
 | VmSize进程当前使用的虚拟内存的大小 | 2533708 kB | 113364 kB |
@@ -618,34 +616,49 @@ Percentage of the requests served within a certain time (ms)
 99%    3
 100%    7 (longest request)
 ```
-## kata overhead
-
-TODO
 
 
+# 负载监控
+## 空闲时负载情况
+kata:
+![](../images/kata-1651138715.png)
 
-## default调整对虚拟机开销的影响
+runc:
+![](../images/runc-1651138830.png)
 
-default_vcpus调整成5，开多个副本，cpu实际使用率并没有很高
-```bash
-[root@localhost kata]# kubectl get pod
-NAME              READY  STATUS   RESTARTS  AGE
-test-kata-1-f9bd8f6f7-59chj  1/1   Running  0      10s
-test-kata-1-f9bd8f6f7-64hg5  1/1   Running  0      10s
-test-kata-1-f9bd8f6f7-7hxtp  1/1   Running  0      10s
-test-kata-1-f9bd8f6f7-jddwb  1/1   Running  0      115s
-test-kata-1-f9bd8f6f7-pgq4t  1/1   Running  0      10s
-test-kata-56b85bd45f-dr5qk   1/1   Running  0      3m25s
-test-kata-56b85bd45f-f8vg8   1/1   Running  0      6m9s
-test-kata-56b85bd45f-fss2v   1/1   Running  0      3m25s
-test-kata-56b85bd45f-mv9vp   1/1   Running  0      9m29s
-test-kata-56b85bd45f-x2tx2   1/1   Running  0      3m25s
-top - 09:17:12 up 9 days, 14:55,  1 user,  load average: 1.19, 0.79, 0.65
-Tasks: 453 total,  1 running, 452 sleeping,  0 stopped,  0 zombie
-%Cpu(s):  1.4 us,  1.0 sy,  0.0 ni, 95.5 id,  2.0 wa,  0.0 hi,  0.0 si,  0.0 st
-KiB Mem :  7935356 total,  959456 free,  4247356 used,  2728544 buff/cache
-KiB Swap:     0 total,     0 free,     0 used.  2054316 avail Mem
+
+## 1G文件随机写负载情况
 ```
+fio --filename=/test/randwrite --direct=1 --iodepth 1 --thread --rw=randwrite --ioengine=psync --bs=512k --size=5G --numjobs=8 --group_reporting --name=randwrite 
+```
+
+- kata:
+pod负载数据可能不准，主要参考节点负载情况
+![](../images/kata-1651195806.png)
+![](../images/kata-1651195984.png)
+
+kata 5G测试卡死，节点异常
+![](../images/kata-5g-notready1651217500.png)
+设置sandboxonly=true，测试卡死，但是pod/节点未异常,进程结束。。。
+![](../images/kata-5g-sanboxonly-node1651217778.png)
+![](../images/kata-5G-sandboxonly.png)
+
+
+
+- runc:
+![](../images/runc-1651196230.png)
+![](../images/runc-1651196155.png)
+
+
+
+
+runc 1G+5G:
+![](../images/runc-1651140621.png)
+![](../images/runc-5g1651218300.png)
+
+# kata-monitor负载指标
+
+
 # 其他已知问题验证
 
 ## DinD
@@ -730,27 +743,48 @@ Linux version 3.10.0-1160.59.1.el7.x86_64 (mockbuild@kbuilder.bsys.centos.org) (
 
 ### 4.19.86（kata1.10.8）
 
-# 边界测试
 
 
+
+
+# 资源限制
 
 ## cpu/mem资源限制
 
 ### 不设置limit:
+默认使用default设置的cpu/mem限制1C2G
 
-默认使用default设置的cpu/mem限制
+### overhead
 
 ### 设置limit
 
-容器业务最大使用上限：limit
+容器业务（pod）最大使用上限：limit
 
 最终VM的资源大小为：limit+default（lscpu、free -h）
 
-VM的最大使用量：overhead+limit(memory.limit_in_bytes)(describe node) 
+VM的的最大使用量（开启SandboxCgroupOnly？？？）：overhead+limit(memory.limit_in_bytes)(describe node) 
 
 如果不设置request，则request 的值和 limit 默认相等
 
-## cpu/mem超分
+task1: 默认禁用SandboxCgroupOnly，默认default_vcpus/mem，不设置overhead，不设置limit/request
+
+task2: 默认禁用SandboxCgroupOnly，默认default_vcpus/mem，设置overhead，不设置limit/request
+
+task3: 开启SandboxCgroupOnly，默认default_vcpus/mem，不设置overhead，不设置limit/request
+
+task4: 开启SandboxCgroupOnly，默认default_vcpus/mem，设置overhead，不设置limit/request
+
+task5: 开启SandboxCgroupOnly，默认default_vcpus/mem，设置overhead，设置limit/request
+
+
+|         | task1 | task2 | task3 | task4 | task5 |
+|-------- | ------------- | ------------- | ------------- | ------------- | ------------- |
+|vm大小|               |               | | | |
+|容器业务最大使用上限|               |               | | | |
+|VM的的最大使用量|               |               | | | |
+
+
+## 超分
 
 ### cpu超分风险不大
 ```bash

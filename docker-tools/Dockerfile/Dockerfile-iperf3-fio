@@ -1,6 +1,5 @@
 FROM sirot/netperf-latest
 
-COPY ./fio-2.1.10.tar.gz /fio-2.1.10.tar.gz 
 RUN mv /etc/apt/sources.list /etc/apt/sources.list.bak && \
     echo "deb http://mirrors.aliyun.com/ubuntu/ trusty main restricted universe multiverse" >/etc/apt/sources.list && \
     echo "deb http://mirrors.aliyun.com/ubuntu/ trusty-security main restricted universe multiverse" >>/etc/apt/sources.list && \
@@ -14,20 +13,21 @@ RUN mv /etc/apt/sources.list /etc/apt/sources.list.bak && \
     echo "deb-src http://mirrors.aliyun.com/ubuntu/ trusty-backports main restricted universe multiverse" >>/etc/apt/sources.list
 
 
-RUN apt-get -qqy update \
-    && apt-get install  \
-    && apt-get install gcc  \
-    && apt-get install libaio-dev  --yes --force-yes
+RUN apt-get update \
+    && apt-get install libaio-dev -y --allow-unauthenticated \
+    && apt-get install gcc -y --allow-unauthenticated \
+    && apt-get install wget -y --allow-unauthenticated
 
-RUN  tar -zxvf /fio-2.1.10.tar.gz \
-    && cd /fio-2.1.10 \
+RUN wget http://brick.kernel.dk/snaps/fio-3.30.tar.gz --no-check-certificate
+
+RUN  tar -zxvf fio-3.30.tar.gz \
+    && cd fio-3.30 \
     && ./configure \
     && make \
     && make install \
-    && rm -rf /fio-2.1.10.tar.gz
-
-
+    && rm -rf fio-3.30.tar.gz
     
 
-# docker build -t hff-iperf3-fio:v0.1 .
+# docker build -t hff-fio-iperf:v0.1 .
+
 

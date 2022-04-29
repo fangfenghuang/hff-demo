@@ -7,3 +7,6 @@ ctr -n k8s.io run --runtime io.containerd.kata.v2 -t --rm docker.io/dotnetdr/sys
 
 # fio
 ctr -n k8s.io run --runtime io.containerd.kata.v2 -t --rm docker.io/xridge/fio:latest hfftest sh
+
+# iperf3
+ctr -n k8s.io run  -t --rm sirot/netperf-latest netperf sh

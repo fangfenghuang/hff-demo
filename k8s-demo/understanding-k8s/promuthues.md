@@ -34,7 +34,6 @@ Prometheus为不同的数据提供了非常多的计算函数，其中有个小�
 # curl
 echo "hfftest 111" |curl --data-binary @- http://10.19.0.13:9091/metrics/job/schedulerStatus/instance/tztest
 
-
 curl -X POST -g 'http://127.0.0.1:9090/api/v1/admin/tsdb/delete_series?match[]=scheduler_effective_dynamic_schedule_count' 
 
  curl -X POST -g 'http://10.19.0.13:9090/api/v1/admin/tsdb/delete_series?match[]={job="schedulerStatus"}'
@@ -42,3 +41,5 @@ curl -X POST -g 'http://127.0.0.1:9090/api/v1/admin/tsdb/delete_series?match[]=s
 
 
 # pushgateway
+
+

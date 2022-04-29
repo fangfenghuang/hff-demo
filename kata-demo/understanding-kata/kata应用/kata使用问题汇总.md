@@ -116,6 +116,18 @@ KATA_CONF_FILE=/etc/kata-containers/configuration.toml /opt/kata/bin/containerd-
 ln -s /opt/kata/bin/containerd-shim-kata-v2 /usr/local/bin/containerd-shim-kata-v2 
 ```
 
+# kata pod 大文件io性能测试导致pod重启，或节点卡死，节点异常问题
+问题1： pod sanbox change，exec退出，pod重启次数加1
+问题2： 节点卡死，节点notrady，相同配置runc测试无该问题
+
+怀疑： 未开启SandboxCgroupOnly，导致sanbox overhead无限制占用主机资源，导致节点异常，这样的话就说明kata的资源开销还是很大的。
+
+开启SandboxCgroupOnly后测试卡死，但是pod/节点未异常,进程结束。。。
+所以，问题是，为什么没有错误信息
+
+
+
+
 # 参考资料
 https://github.com/kata-containers/kata-containers/blob/main/docs/Limitations.md
 

@@ -1,14 +1,29 @@
 # Copyright (c) 2020 Eric Ernst
 # SPDX-License-Identifier: Apache-2.0
 
-FROM golang:1.15-alpine AS builder
+FROM golang:1.16-alpine AS builder
 
-RUN apk add --no-cache bash curl git make
+RUN apk add --no-cache bash curl git make gcc musl-dev
 WORKDIR /go/src/github.com/kata-containers/kata-containers/src/runtime
 COPY . /go/src/github.com/kata-containers/kata-containers
+
+RUN mv /go/src/github.com/kata-containers/kata-containers/yq_linux_amd64 /go/bin/yq \
+    && chmod +x /go/bin/yq
 RUN SKIP_GO_VERSION_CHECK=true make monitor
 
 FROM alpine:3.14
 COPY --from=builder /go/src/github.com/kata-containers/kata-containers/src/runtime/kata-monitor /usr/bin/kata-monitor
 CMD ["-h"]
 ENTRYPOINT ["/usr/bin/kata-monitor"]
+
+
+
+
+# ls tools/packaging/kata-monitor/Dockerfile-kata-monitor
+# ci文件增加权限 chmod +x ci/*.sh
+# 增加代理否则连不上github: curl -o yq -LSsf https://github.com/mikefarah/yq/releases/download/3.4.1/yq_linux_amd64
+
+
+# cd kata-containers
+# docker build -f tools/packaging/kata-monitor/Dockerfile-kata-monitor -t kata-monitor:v2.4.0 .
+

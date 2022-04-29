@@ -43,6 +43,7 @@ spec:
         - mountPath: /foo
           name: empty-dir
 
+# stress
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -94,6 +95,7 @@ spec:
         - -cpus
         - "1"
 
+# stress
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -121,6 +123,8 @@ spec:
         args:
         - -cpus
         - "1"
+
+# stress        
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -156,70 +160,6 @@ spec:
         args:
         - -cpus
         - "1"
-
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: test-kata
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: test-kata
-  template:
-    metadata:
-      labels:
-        app: test-kata
-    spec:
-      runtimeClassName: kata-containers
-      containers:
-      - image: vish/stress
-        securityContext:
-          privileged: true
-        imagePullPolicy: IfNotPresent
-        name: cpu-stress-kata
-        ports:
-        - containerPort: 80
-          protocol: TCP
-        resources:
-          requests:
-          limits:
-            memory: "1000Mi"
-            cpu: "2"
-        args:
-        - -cpus
-        - "5"
-
-
-
-        
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: test-hostnetwork
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: test-kata
-  template:
-    metadata:
-      labels:
-        app: test-kata
-    spec:
-      hostNetwork: true
-      runtimeClassName: kata-containers
-      containers:
-      - image: nginx
-        imagePullPolicy: IfNotPresent
-        name: nginx
-        ports:
-        - containerPort: 80
-          protocol: TCP
 
 
 ---
@@ -373,7 +313,7 @@ spec:
 
 
 
-
+# crictl ctr
 ---
 kind: Deployment
 apiVersion: apps/v1

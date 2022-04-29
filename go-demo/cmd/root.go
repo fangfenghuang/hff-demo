@@ -115,7 +115,7 @@ var RootCmd = &cobra.Command{
 // add init func
 func initializaton() {
 	k8sclient.InitClientSet()
-	//calico.InitGlobalNetworkPolicy()
+	//calico.InitGlobalNetworkPolicy()   //初始化网络策略
 }
 
 func Execute() {

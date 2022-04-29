@@ -31,6 +31,33 @@ containerd-shim-kata-v2 通过虚拟串口向 VM GuestOS（POD） 内的 kata-ag
 - Kata containerd shim v2 metrics
 
 
+kata_agent_io_stat代理进程 IO 统计
+kata_agent_process_cpu_seconds_total 以秒为单位花费的总用户和系统 CPU 时间。
+kata_agent_total_vm 
+
+kata_guest_cpu_time
+kata_guest_diskstat
+kata_guest_load
+kata_guest_meminfo
+kata_guest_vm_stat
+
+kata_shim_pod_overhead_cpu
+kata_shim_pod_overhead_memory_in_bytes
+
+
+# promethues监控负载指标
+- container_fs_writes_bytes_total 
+
+- container_cpu_usage_seconds_total没有container字段
+- 
+```
+sum(irate(container_cpu_usage_seconds_total{namespace=~"${allNamespace}",pod=~"^${loadNames}",container!=""}[3m]))by(pod)
+```
+
+
+
+
+
 # 指标的性能与开销
 -  端到端（从 Prometheus 服务器到kata-monitor并kata-monitor写回响应）：20 毫秒（平均）
 -  代理（从 shim 到agent的所有 RPC）：3 毫秒（平均）
@@ -41,12 +68,41 @@ containerd-shim-kata-v2 通过虚拟串口向 VM GuestOS（POD） 内的 kata-ag
 	Prometheus支持gzip压缩. 启用后，每个请求的响应大小会更小：  
 2 + (10 - 2) *`number of kata sandboxes`
 
+# endpoint
+`kata-monitor`公开了以下endpoint·：
+  *  `/metrics`              : 获取 Kata 沙箱指标。
+  *  `/sandboxes`            : 列出主机上运行的所有 Kata 沙箱。
+  *  `/agent-url`            : 获取 Kata 沙箱的代理 URL。
+  *  `/debug/vars`           : Kata 运行时 shim 的内部数据。
+  *  `/debug/pprof/`         : Kata 运行时 shim 的 Golang 分析数据：索引页。
+  *  `/debug/pprof/cmdline` : Kata 运行时 shim 的 Golang 分析数据：`cmdline`endpoint。
+  *  `/debug/pprof/profile` : Kata 运行时 shim 的 Golang 分析数据：`profile`endpoint（CPU 分析）。
+  *  `/debug/pprof/symbol`   : Kata 运行时 shim 的 Golang 分析数据：`symbol`endpoint。
+  *  `/debug/pprof/trace`    : Kata 运行时 shim 的 Golang 分析数据：`trace`endpoint。
+
+`/agent-url`和所有`/debug/` * 都需要在查询字符串中指定`sandbox_id` 
+
 
 # kata-monitor启动方式
 
-每个节点只运行一个kata-monitor进程
+1. kata节点运行kata-monitor守护进程
+   curl 127.0.0.1:8090/sandboxes
+   curl 127.0.0.1:8090/agent-url?sandboxes=df96b24bd49ec437c872c1a758edc084121d607ce1242ff5d2263a0e1b693343
+2. daemonset(建议)
 
 
+# `enable_pprof = true` 
+configuration-qemu.toml
 
+
+# daemonset部署
+kubectl apply -f https://raw.githubusercontent.com/kata-containers/kata-containers/main/docs/how-to/data/kata-monitor-daemonset.yml
+Once the daemonset is running, Prometheus should discover kata-monitor as a target. You can open http://<hostIP>:30909/service-discovery and find kubernetes-pods under the Service Discovery list
+
+- 关于没有kata-monitor 镜像问题
+https://github.com/kata-containers/kata-containers/issues/2421
+
+
+- 镜像编译问题
 
 

@@ -1,7 +1,5 @@
 
 # nodeName: telecom-k8s-phy01
-
-
 ---
 apiVersion: v1
 kind: Pod
@@ -29,6 +27,7 @@ spec:
       path: /hff/test/kata
       type: Directory
 
+# fio
 ---
 apiVersion: v1
 kind: Pod
@@ -55,12 +54,14 @@ spec:
       path: /hff/test/runc
       type: Directory
 
+# iperf3
 ---
 apiVersion: v1
 kind: Pod
 metadata:
   name: netperf-server
 spec:
+  runtimeClassName: kata-containers
   containers:
   - image: sirot/netperf-latest
     command: ["/bin/sh","-c","netserver -p 4444 -4; iperf3 -s -i 1;"]
@@ -77,12 +78,14 @@ spec:
         cpu: "5"
 
 
+# stress
 ---
 apiVersion: v1
 kind: Pod
 metadata:
-  name: netperf-server
+  name: stress-kata
 spec:
+  runtimeClassName: kata-containers
   containers:
   - image: vish/stress
     imagePullPolicy: IfNotPresent
@@ -92,12 +95,39 @@ spec:
       protocol: TCP
     resources:
       requests:
-        memory: "1000Mi"
-        cpu: "2"
+        memory: "500Mi"
+        cpu: "1"
       limits:
         memory: "1000Mi"
         cpu: "2"
     args:
     - -cpus
     - "1"
+    - -mem-total 
+    - 2000Mi 
+    - -mem-alloc-size 
+    - 10Mi 
+    - -mem-alloc-sleep 
+    - 1s
+
+
+# upload pod
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+spec:
+  containers:
+  - name: test-pod
+    image: busybox
+    imagePullPolicy: IfNotPresent
+    tty: true
+    volumeMounts:
+    - mountPath: /uplaod-tmp
+      name: uplaod-tmp
+  volumes:
+  - name: uplaod-tmp
+    persistentVolumeClaim:
+      claimName: test-pvc
 

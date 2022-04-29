@@ -51,7 +51,7 @@ distribution  imagedb  layerdb  repositories.json
 ### 新增一个镜像
 ```bash
 [root@tztest kbuser]# docker images | grep web-demo
-harbor.caih.local/caihcloud/web-demo_c7cac94                    dev-1648826415118                          df2b573855e0        12 days ago         17.7MB
+web-demo_c7cac94                    dev-1648826415118                          df2b573855e0        12 days ago         17.7MB
 [root@tztest kbuser]# ls /app/docker/overlay2/d1142002c8d33580ab1213fff5746027a174d763e37885039df98b7108d41eb0
 committed  diff  link  lower  work
 
