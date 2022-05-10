@@ -158,42 +158,29 @@ root     28355 28342  0 10:49 ?        00:00:00 /opt/kata/libexec/kata-qemu/virt
 /var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/199015/fs/etc/hfftest0413-etc
 ```
 
-## 与存储相关的参数
-### cache
-- virtio_fs_cache = "auto"
-- virtio_fs_cache_size = 0
-```
-- none
-Metadata, data, and pathname lookup are not cached in guest. They are
-always fetched from host and any changes are immediately pushed to host.
-- auto
-Metadata and pathname lookup cache expires after a configured amount of
- time (default is 1 second). Data is cached while the file is open (close to open consistency).
-- always
-Metadata, data, and pathname lookup are cached in guest and never expire.
-```
 
 
 
-## 共享内存目录file_mem_backend
+### virtiofsd cache
+guest 生成时会指定内存大小，virtiofsd 会共享使用 guest 的内存。默认使用memory-backend-file 内存对象。
 
+guest 和 host 数据传输都是通过 virtio-fs，包括容器镜像和容器卷，读写权限取决于 virtiofsd 进程的权限。
+
+
+### DAX(直接访问)
+DAX windows 是一块虚拟内存区域，通过 PCI Bar 把文件映射到 guest 里面，并不真正的占用主机那么多内存，即使有 100 个虚拟机，设置的 DAX cache 是 1G，也不会真的使用 100G 内存。
+
+如果没有 DAX，内存使⽤量可能会⾮常⼤，因为每个 guest都有⾃⼰的⽂件缓冲区。 
+
+Kata Containers 官方下载的版本默认没有支持，需要编译安装 gitlab 托管的 virtio-fs qemu 项目 qemu5.0-virtiofs-dax 分支，需要单独编译qemu?qemu5.0-virtiofs-dax????
+
+- configuration.toml 设置virtio_fs_cache_size dax window ⼤⼩ 
 
 
 
 ### virtiofsd已知问题汇总
 
 [https://github.com/kata-containers/runtime/issues/2797](https://github.com/kata-containers/runtime/issues/2797)
-
-
-## DAX(直接访问)
-将主机buffffer map到客户机中，guest使⽤与主机相同 的物理内存，即使它使⽤不同的虚拟地址。如果没有 DAX，内存使⽤量可能会⾮常⼤，因为每个 guest都有⾃⼰的⽂件缓冲区。 
-
-- 需要单独编译qemu?qemu5.0-virtiofs-dax
-- configuration.toml 设置virtio_fs_cache_size dax window ⼤⼩ 
-
-
-
-
 
 ## containerd的Snapshotter
 

@@ -94,3 +94,24 @@ $ sudo crictl update --memory $((2*1024*1024*1024)) $cid
 ```
 
 内存资源当前只支持热插，不支持内存热拔。
+
+
+# 资源限制
+
+## cpu/mem资源限制
+
+### 不设置limit:
+默认使用default设置的cpu/mem限制1C2G
+
+### overhead
+
+### 设置limit
+
+容器业务（pod）最大使用上限：limit
+
+最终VM的资源大小为：limit+default（lscpu、free -h）
+
+VM的的最大使用量（开启SandboxCgroupOnly）：overhead+limit(memory.limit_in_bytes)(describe node) 
+
+如果不设置request，则request的值和limit默认相等
+

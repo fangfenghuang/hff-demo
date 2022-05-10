@@ -11,6 +11,7 @@
   containerd配置参考《config.toml》、《0-containerd.conf》
 
 # 部署
+- 生成configuration.toml分发到各个kata节点（所有节点）
 - 创建kata资源：kata-rbac.yaml、kata-deploy.yaml，创建runtimeClass： runtimeClass.yaml
 ```bash
 $ kubectl apply -f kata-rbac.yaml
@@ -27,9 +28,10 @@ ln -s /opt/kata/bin/kata-runtime /usr/bin/kata-runtime
 ln -s /opt/kata/bin/kata-monitor /usr/bin/kata-monitor
 ```
 
-注：可以增加节点标签设置kata-deploy daemonset节点亲和性设置kata节点
-
-
+注：
+- 可以增加节点标签设置kata-deploy daemonset节点亲和性设置kata节点
+- 需要注意的是kata-deploy重启可能会导致默认的configuration.toml文件恢复默认配置，因此使用的是优先级更高的/etc/kata-containers/configuration.toml
+- 使用ctr run创建的容器默认使用的是-qemu配置（/opt/kata/share/defaults/kata-containers/configuration-qemu.toml），如果需要使用ctr run测试，请同步配置到-qemu配置，或重定向shim链接到新的文件下
 
 
 ## 检查：
@@ -44,6 +46,8 @@ ln -s /opt/kata/bin/kata-monitor /usr/bin/kata-monitor
 - 删除所有kata容器
 - 删除kata节点软连接
 - 删除kata资源：kata-rbac.yaml、kata-deploy.yaml、runtimeClass.yaml
+- 删除kata节点configuration.toml文件
+
 ```bash
 $ kubectl delete -f kata-deploy.yaml
 

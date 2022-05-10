@@ -30,19 +30,25 @@ containerd-shim-kata-v2 通过虚拟串口向 VM GuestOS（POD） 内的 kata-ag
 - Kata monitor metrics
 - Kata containerd shim v2 metrics
 
-
+在kata vm中/proc/<pid>/io  stat status等的数据
 kata_agent_io_stat代理进程 IO 统计
 kata_agent_process_cpu_seconds_total 以秒为单位花费的总用户和系统 CPU 时间。
 kata_agent_total_vm 
 
+在kata vm中/proc/stat  diskstats meminfo等的数据
 kata_guest_cpu_time
 kata_guest_diskstat
 kata_guest_load
 kata_guest_meminfo
 kata_guest_vm_stat
 
-kata_shim_pod_overhead_cpu
-kata_shim_pod_overhead_memory_in_bytes
+kata_hypervisor_io_stat 处理IO统计
+kata_hypervisor_proc_stat  进程统计
+
+kata_shim_pod_overhead_cpu CPU 资源的 Kata Pod 开销（百分比）
+kata_shim_pod_overhead_memory_in_bytes Kata Pod 的内存资源开销（字节）
+
+
 
 
 # promethues监控负载指标

@@ -370,6 +370,7 @@ spec:
         app: test-kata
     spec:
       runtimeClassName: kata-containers
+      containers:
       - image: docker.io/xridge/fio:latest
         securityContext:
           privileged: true

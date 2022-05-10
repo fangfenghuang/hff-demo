@@ -1,9 +1,16 @@
  [TOC]
 # 安全容器-Kata containers
+​	安全容器4类方案：
+- 传统OS容器配合安全机制（runc + SELinux, AppArmor, … + rootless mode）
+- 用户态内核的容器（Google的gVisor）
+- Library OS（UniKernel、Nabla Containers）
+- 轻量虚拟化的容器（Kata Containers、Firecracker）。
 
-​		Kata Containers项目来自于2017年12月合并的两个项目“IntelClear Containers”和“Hyper runV”，其目标是构建极其轻量级的VM，它们像容器一样执行，但提供工作负载隔离和添加虚拟机层的安全优势。		
+​		Kata Containers项目来自于2017年12月合并的两个项目“IntelClear Containers”和“Hyper runV”，其目标是构建极其轻量级的VM，它们像容器一样执行，但提供工作负载隔离和添加虚拟机层的安全优势。
 
 ​		KataContainers社区于2018年5月发布了第一版1.0。由于Kata容器运行时兼容OCI，它可以无缝地插入Docker引擎和任何其他容器管理平台，如Kubernetes和Open-Stack，只需简单地将RUNC替换为Kata-runtime。
+
+​		Kata Containers 的本质就是一个精简后的轻量级虚拟机。
 
 ## The speed of containers, the security of VMs
 
@@ -27,16 +34,6 @@
 4. 虚机可能不够快，阻碍了它在容器环境的应用，那么可不可以拥有 "speed of container" 呢？
 现在，如果最后一个问题可以解决，那么它就是我们要的“安全的容器”了——这就是 Kata Containers。
  
-### kata解决的一些虚拟化问题
-1. 虚拟机外的shim进程和虚拟机内的agent进程如何通信?
-​		kata 2.0则使用virtio-vsock来作为虚拟机内外通信的信道，解决了shim和agent的通信问题。
-
-2. 虚拟机外的镜像rootfs如何让虚拟机内的container访问到，以支持容器创建、运行?(两种方式)
-​		共享文件系统：将host上目录挂载到虚拟机里面使用。kata支持了virtio-9p、virtio-fs两种guest与host共享文件系统的实现方式，2.0中默认采用virtio-fs，其性能比virtio-9p优出很多;
-​		透传块设备：将host上基于device mapper实现的镜像rootfs块设备透传进虚拟机中。
-
-3. 虚拟机网络如何与现有容器网络(例如CNI)对接?
-​		目前kata连通veth和tap有两种方式：tcfilter和macvtap
 
 ## 安全隔离
 
@@ -60,7 +57,7 @@
 
 ## 减少虚拟化开销
 
-- 通过“少用不必要的内存”和“共享能共享的内存”来降低内存的开销，更小的内存不仅开销更小，启动也更轻快，对于大多数场景来说，这实现了"secure of VM, speed of container"。
+- 通过“少用不必要的内存”和“共享能共享的内存”来降低内存的开销，更小的内存不仅开销更小，启动也更轻快
 
 - 最关键的性能优化来自Intel Clear Containers。
 
@@ -68,24 +65,14 @@
 
 - 使用特定的Linux内核，使用简化的initrd以及rootfs。
 
- 优化点：
-
-- 最小的工作负载启动和关闭时间
-
-- 最小的工作负载内存占用
-
-- 最大网络吞吐量
-
-- 最小的网络延迟
 
 ## 怎样接上容器的生态
 
 ​		kata-containers它本质上就一个容器的runtime。只要实现了OCI的接口就可以接上那些容器管理工具，只要实现了CRI接口，就可以接上k8s。
 
-​		所以kata-containers与 OCI 运行时规范兼容，可以通过 CRI-O 和 Containerd 实现与 Kubernetes CRI 进行无缝协作。（Shim API）
+​		所以kata-containers与OCI运行时规范兼容，可以通过CRI-O和Containerd实现与 Kubernetes CRI进行无缝协作。（Shim API）
 
 ## 和传统的runC的区别
-
 ​		最大的区别就在于container是放在虚拟机里面运行的，中间多了一层kernel后，外面的容器管理软件就无法管理，监控里面的进程、容器，也无法和里面通信。 解决方案就是在VM里面放了一个agent，内外通过VSOCK通信，这样子内外就打通了。
 
 ## 使用场景
@@ -105,6 +92,9 @@
 # 架构（Kata2.0）
 [architecture](https://github.com/kata-containers/kata-containers/tree/main/docs/design/architecture)![](../images/20220330163647.png)
 
+- Kata Containers 的虚拟机里会有一个特殊的 Init 进程负责管理虚拟机里面的用户容器，并且只为这些容器开启 Mount Namespace。所以，这些用户容器之间，原生就是共享 Network 以及其他 Namespace 的。
+- 此外，为了跟上层编排框架比如 Kubernetes 进行对接，Kata Containers 项目会启动一系列跟用户容器对应的 shim 进程，来负责操作这些用户容器的生命周期。当然，这些操作，实际上还是要靠虚拟机里的 Init 进程来帮你做到。
+- 为了能够对这个虚拟机的 I/O 性能进行优化，Kata Containers 也会通过 vhost 技术（比如：vhost-user）来实现 Guest 与 Host 之间的高效的网络通信，并且使用 PCI Passthrough （PCI 穿透）技术来让 Guest 里的进程直接访问到宿主机上的物理设备。
 
 
 ## Kata Containers 2.x vs 1.x
@@ -191,6 +181,8 @@ Kata Containers 支持多个ypervisor
 
 #### qemu-system-x86_64
 
+### cgroup
+[[kata cgroup]]
 
 
 ### 客户机内核和镜像

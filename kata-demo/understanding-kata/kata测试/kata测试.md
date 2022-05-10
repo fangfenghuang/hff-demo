@@ -30,6 +30,13 @@
 开启vm template，优化启动时间
 
 ## 测试环境
+## 测试环境版本:
+
+Centos 7.9
+qemu-kvm 6.2.0 
+Kubernetes 1.17.2
+Containerd 1.4.6
+Kata Containers 2.4.0
 
 ### 单机：
 
@@ -747,41 +754,6 @@ Linux version 3.10.0-1160.59.1.el7.x86_64 (mockbuild@kbuilder.bsys.centos.org) (
 
 
 
-# 资源限制
-
-## cpu/mem资源限制
-
-### 不设置limit:
-默认使用default设置的cpu/mem限制1C2G
-
-### overhead
-
-### 设置limit
-
-容器业务（pod）最大使用上限：limit
-
-最终VM的资源大小为：limit+default（lscpu、free -h）
-
-VM的的最大使用量（开启SandboxCgroupOnly？？？）：overhead+limit(memory.limit_in_bytes)(describe node) 
-
-如果不设置request，则request 的值和 limit 默认相等
-
-task1: 默认禁用SandboxCgroupOnly，默认default_vcpus/mem，不设置overhead，不设置limit/request
-
-task2: 默认禁用SandboxCgroupOnly，默认default_vcpus/mem，设置overhead，不设置limit/request
-
-task3: 开启SandboxCgroupOnly，默认default_vcpus/mem，不设置overhead，不设置limit/request
-
-task4: 开启SandboxCgroupOnly，默认default_vcpus/mem，设置overhead，不设置limit/request
-
-task5: 开启SandboxCgroupOnly，默认default_vcpus/mem，设置overhead，设置limit/request
-
-
-|         | task1 | task2 | task3 | task4 | task5 |
-|-------- | ------------- | ------------- | ------------- | ------------- | ------------- |
-|vm大小|               |               | | | |
-|容器业务最大使用上限|               |               | | | |
-|VM的的最大使用量|               |               | | | |
 
 
 ## 超分

@@ -49,4 +49,3 @@ docker image ls -q
 $ docker image rm $(docker image ls -q redis)
 ```
 
-# 
