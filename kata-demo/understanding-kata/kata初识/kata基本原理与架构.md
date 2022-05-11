@@ -90,7 +90,9 @@
 - 具有内核相关功能的遗留的依赖内核的工作负载
 
 # 架构（Kata2.0）
-[architecture](https://github.com/kata-containers/kata-containers/tree/main/docs/design/architecture)![](../images/20220330163647.png)
+[architecture](https://github.com/kata-containers/kata-containers/tree/main/docs/design/architecture)
+
+![](../images/20220330163647.png)
 
 - Kata Containers 的虚拟机里会有一个特殊的 Init 进程负责管理虚拟机里面的用户容器，并且只为这些容器开启 Mount Namespace。所以，这些用户容器之间，原生就是共享 Network 以及其他 Namespace 的。
 - 此外，为了跟上层编排框架比如 Kubernetes 进行对接，Kata Containers 项目会启动一系列跟用户容器对应的 shim 进程，来负责操作这些用户容器的生命周期。当然，这些操作，实际上还是要靠虚拟机里的 Init 进程来帮你做到。
@@ -113,8 +115,19 @@
 
 在 Kata 1.x 中，面向用户的主要组件是运行时（kata-runtime）。对于 Kata 2.0，主要组件是 Kata containerd shim v2。 对“ Kata 运行时”的任何提及均应指代 Kata containerd shim v2。
 
+## 启动运行流程
+docker/kubelet通过接口调用containerd-shim-kata-v2创建pod/container，
+container-shim-kata-v2为每个容器/pod创建一个QEMU/KVM虚拟机。
+虚拟机中启动一个极简的kernel，最终运行一个用户态程序kata-agent。kata-agent通过VSOCK向host上暴露一个gRPC接口，container-shim-kata-v2通过这个接口连接上kata-agent，进而实现对虚拟机内部的管理。这个gRPC接口既用于传输管理命令，也用于传输stdin，stdout，stderr等流。
+kata-agent在虚拟机中通过libcontainer管理container。启动container所需要的OCI bundle可以通过block device或者mount point的形式从host上挂上去。
 
-## pod创建过程，接口调用原理
+**关于虚拟机在host上的存在形式：**
+
+一个QEMU/KVM虚拟机本质上就是host上的一个进程
+虚拟机的一个VCPU本质上是host的一个线程，虚拟机进程中除了VCPU线程还有IO管理等线程。 * 虚拟机使用的内存来自进程的虚拟地址空间。
+这边的agent干的事情和runC基本上是差不多的，区别就在于它要知道自己是在一个VM里面，并且和再上一层的软件通信要走VSOCK。
+
+## 接口调用
 
 - 提交创建请求
 - api server将api对象被存储到etcd

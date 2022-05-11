@@ -39,7 +39,9 @@ curl -X POST -g 'http://127.0.0.1:9090/api/v1/admin/tsdb/delete_series?match[]=s
  curl -X POST -g 'http://10.19.0.13:9090/api/v1/admin/tsdb/delete_series?match[]={job="schedulerStatus"}'
 
 
-
+```shell
+curl -XPOST <prometheus-url>/-/reload
+```
 # pushgateway
 
 

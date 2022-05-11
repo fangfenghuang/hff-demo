@@ -4,31 +4,22 @@
 
 https://github.com/kata-containers/kata-containers/blob/main/docs/design/kata-2-0-metrics.md
 
-# 指标设计
 
-Kata 实现 CRI 的 API，并支持 ContainerStats 和 ListContainerStats 接口以公开容器指标。用户可以使用这些界面来获取有关容器的基本指标。
-但是与 runc 不同，Kata 是基于 VM 的运行时，并且具有不同的体系结构。
+kata-monitor 进程运行在宿主机上，负责从各 Kata Containers 容器/VM中获取 metrics，并返回给 Prometheus。
 
-在 Kata 2.0 中，以下组件将能够提供有关系统的更多详细信息。
-
-- containerd shim v2 (effectively kata-runtime)
-- Hypervisor statistics
-- Agent process
-- Guest OS statistics
-
-Kata 2.0 指标强烈依赖于 Prometheus。 Kata Containers 2.0 引入了一个名为 kata-monitor 的新 Kata 组件，该组件用于监视主机上的其他 Kata 组件。
+默认情况下 kata-monitor 不需要指定参数，它会监听在本地的 8090 端口，这也是在 Prometheus 配置文件中 target 指定的端口号。如果要修改这个端口号，则需要注意两处要保持一致。
 
 
-containerd-shim-kata-v2 通过虚拟串口向 VM GuestOS（POD） 内的 kata-agent 请求监控数据，kata-agent 采集 GuestOS 内的容器监控数据并响应
+# Kata Containers 目前采集了下面几种类型的 metrics：
+
+Kata agent metrics：agent 进程的 metrics
+Kata guest OS metrics：VM 中的 guest metrics
+Hypervisor metrics：hypervisor 进程的 metrics（如果 hypervisor 本身提供了 metrics 接口，比如 firecracker，也会采集到 Kata Containers 的 metrics）
+Kata monitor metrics：kata-monitor 进程的 metrics
+Kata containerd shim v2 metrics：shimv2 进程的 metrics
 
 
-# 指标列表
-- Kata agent metrics
-- Firecracker metrics
-- Kata guest OS metrics
-- Hypervisor metrics
-- Kata monitor metrics
-- Kata containerd shim v2 metrics
+
 
 在kata vm中/proc/<pid>/io  stat status等的数据
 kata_agent_io_stat代理进程 IO 统计
@@ -112,3 +103,121 @@ https://github.com/kata-containers/kata-containers/issues/2421
 - 镜像编译问题
 
 
+
+# kata指标实例
+```bash
+[root@localhost hff]# kata-runtime metrics 842463ada9994438f6c663b082bbf5735c64309f77a0b57838b8a16f347433a6 | grep kata_shim_pod_overhead_cpu
+# HELP kata_shim_pod_overhead_cpu Kata Pod overhead for CPU resources(percent).
+# TYPE kata_shim_pod_overhead_cpu gauge
+kata_shim_pod_overhead_cpu 1.016532023719192(????)
+
+[root@localhost hff]# kata-runtime metrics 842463ada9994438f6c663b082bbf5735c64309f77a0b57838b8a16f347433a6 | grep kata_shim_pod_overhead_memory_in_bytes
+# HELP kata_shim_pod_overhead_memory_in_bytes Kata Pod overhead for memory resources(bytes).
+# TYPE kata_shim_pod_overhead_memory_in_bytes gauge
+kata_shim_pod_overhead_memory_in_bytes 1.17354496e+08（对应kubepods）
+
+
+[root@localhost hff]# kata-runtime metrics 842463ada9994438f6c663b082bbf5735c64309f77a0b57838b8a16f347433a6 | grep kata_agent_total_vm
+# HELP kata_agent_total_vm Agent process total VM size
+# TYPE kata_agent_total_vm gauge
+kata_agent_total_vm 2.0017152e+07
+
+
+[root@localhost hff]# kata-runtime metrics 842463ada9994438f6c663b082bbf5735c64309f77a0b57838b8a16f347433a6 | grep kata_guest_load
+# HELP kata_guest_load Guest system load.
+# TYPE kata_guest_load gauge
+kata_guest_load{item="load1"} 0
+kata_guest_load{item="load15"} 0
+kata_guest_load{item="load5"} 0
+
+[root@localhost hff]# systemd-cgtop | grep pod24356d87-3993-4e9a-8d3f-55207af763f9
+/kubepods/pod24356d87-3993-4e9a-8d3f-55207af763f9                                                                             -      -   115.3M        -        -
+/kubepods/pod24356d87-3993-4e9a-8d3f-55207af763f9/kata_842463ada9994438f6c663b082bbf5735c64309f77a0b57838b8a16f347433a6       7      -   115.3M        -        -
+/kata_overhead                                                                                                                -      -    47.9M        -        -
+
+[root@localhost hff]# kubectl top pod
+NAME                              CPU(cores)   MEMORY(bytes)
+test-kata                         0m           0Mi
+
+## 开启kata-monitor
+[root@localhost ~]# curl 127.0.0.1:8090/sandboxes
+842463ada9994438f6c663b082bbf5735c64309f77a0b57838b8a16f347433a6
+[root@localhost ~]# kata-runtime metrics 842463ada9994438f6c663b082bbf5735c64309f77a0b57838b8a16f347433a6 | grep kata_shim_pod_overhead_cpu
+# HELP kata_shim_pod_overhead_cpu Kata Pod overhead for CPU resources(percent).
+# TYPE kata_shim_pod_overhead_cpu gauge
+kata_shim_pod_overhead_cpu 0.3821455739873718(降下来了？？？)
+[root@localhost ~]# kata-runtime metrics 842463ada9994438f6c663b082bbf5735c64309f77a0b57838b8a16f347433a6 | grep kata_shim_pod_overhead_memory_in_bytes
+# HELP kata_shim_pod_overhead_memory_in_bytes Kata Pod overhead for memory resources(bytes).
+# TYPE kata_shim_pod_overhead_memory_in_bytes gauge
+kata_shim_pod_overhead_memory_in_bytes 1.19877632e+08
+[root@localhost ~]# kata-runtime metrics 842463ada9994438f6c663b082bbf5735c64309f77a0b57838b8a16f347433a6 | grep kata_agent_total_vm
+# HELP kata_agent_total_vm Agent process total VM size
+# TYPE kata_agent_total_vm gauge
+kata_agent_total_vm 2.0033536e+07
+[root@localhost ~]#  kata-runtime metrics 842463ada9994438f6c663b082bbf5735c64309f77a0b57838b8a16f347433a6 | grep kata_guest_load
+# HELP kata_guest_load Guest system load.
+# TYPE kata_guest_load gauge
+kata_guest_load{item="load1"} 0
+kata_guest_load{item="load15"} 0
+kata_guest_load{item="load5"} 0
+[root@localhost ~]# systemd-cgtop | grep pod24356d87-3993-4e9a-8d3f-55207af763f9
+/kubepods/pod24356d87-3993-4e9a-8d3f-55207af763f9                                                                             -      -   117.2M        -        -
+/kubepods/pod24356d87-3993-4e9a-8d3f-55207af763f9/kata_842463ada9994438f6c663b082bbf5735c64309f77a0b57838b8a16f347433a6       7      -   117.2M        -        -
+
+
+[root@localhost ~]# curl 127.0.0.1:8090/metrics | grep kata_shim_pod_overhead_cpu
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100  407k    0  407k    0     0  31.5M      0 --:--:-- --:--:-- --:--:-- 33.1M
+# HELP kata_shim_pod_overhead_cpu Kata Pod overhead for CPU resources(percent).
+# TYPE kata_shim_pod_overhead_cpu gauge
+kata_shim_pod_overhead_cpu{sandbox_id="842463ada9994438f6c663b082bbf5735c64309f77a0b57838b8a16f347433a6",cri_uid="24356d87-3993-4e9a-8d3f-55207af763f9",cri_name="test-kata",cri_namespace="default"} 0.7711305188284795
+[root@localhost ~]# curl 127.0.0.1:8090/metrics | grep kata_shim_pod_overhead_memory_in_bytes
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0# HELP kata_shim_pod_overhead_memory_in_bytes Kata Pod overhead for memory resources(bytes).
+# TYPE kata_shim_pod_overhead_memory_in_bytes gauge
+kata_shim_pod_overhead_memory_in_bytes{sandbox_id="842463ada9994438f6c663b082bbf5735c64309f77a0b57838b8a16f347433a6",cri_uid="24356d87-3993-4e9a-8d3f-55207af763f9",cri_name="test-kata",cri_namespace="default"} 1.19918592e+08
+100  407k    0  407k    0     0  28.6M      0 --:--:-- --:--:-- --:--:-- 30.5M
+[root@localhost ~]# curl 127.0.0.1:8090/metrics | grep kata_agent_total_vm
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0# HELP kata_agent_total_vm Agent process total VM size
+# TYPE kata_agent_total_vm gauge
+kata_agent_total_vm{sandbox_id="842463ada9994438f6c663b082bbf5735c64309f77a0b57838b8a16f347433a6",cri_uid="24356d87-3993-4e9a-8d3f-55207af763f9",cri_name="test-kata",cri_namespace="default"} 2.0037632e+07
+100  407k    0  407k    0     0  30.4M      0 --:--:-- --:--:-- --:--:-- 33.1M
+[root@localhost ~]# curl 127.0.0.1:8090/metrics | grep kata_guest_load
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0# HELP kata_guest_load Guest system load.
+# TYPE kata_guest_load gauge
+kata_guest_load{item="load1",sandbox_id="842463ada9994438f6c663b082bbf5735c64309f77a0b57838b8a16f347433a6",cri_uid="24356d87-3993-4e9a-8d3f-55207af763f9",cri_name="test-kata",cri_namespace="default"} 0
+kata_guest_load{item="load15",sandbox_id="842463ada9994438f6c663b082bbf5735c64309f77a0b57838b8a16f347433a6",cri_uid="24356d87-3993-4e9a-8d3f-55207af763f9",cri_name="test-kata",cri_namespace="default"} 0
+kata_guest_load{item="load5",sandbox_id="842463ada9994438f6c663b082bbf5735c64309f77a0b57838b8a16f347433a6",cri_uid="24356d87-3993-4e9a-8d3f-55207af763f9",cri_name="test-kata",cri_namespace="default"} 0
+100  407k    0  407k    0     0  31.3M      0 --:--:-- --:--:-- --:--:-- 33.1M
+```
+
+
+不起kata monitor可以看到指标，但是 curl 127.0.0.1:8090/sandboxes不能查看
+
+
+# 使用 Prometheus + Grafana 监控 Kata Containers
+http://liubin.org/kata-dev-book/src/kata-prom-grafana.html
+
+编辑 Prometheus 配置文件
+```bash
+# 在 scrape_configs 部分的最后，加入下面的 target：
+  - job_name: 'kata'
+    static_configs:
+    - targets: ['localhost:8090']
+
+curl -XPOST <prometheus-url>/-/reload  (curl -XPOST http://10.240.229.101:32090/-/reload)
+```
+
+http://10.208.11.110:3000/
+http://10.208.11.110:9090/
+
+
+
+
+kata-monitor 启动后，就可以在 Prometheus targets 页面（ http://<your_server>:9090/targets ）看到我们的 target 的状态了（UP还是DOWN）。

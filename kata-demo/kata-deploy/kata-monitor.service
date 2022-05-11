@@ -1,0 +1,14 @@
+[Unit]
+Description=kata monitor
+
+[Service]
+ExecStart=/opt/kata/bin/kata-monitor
+Restart=always
+StartLimitInterval=0
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+
+
+# /etc/systemd/system/
