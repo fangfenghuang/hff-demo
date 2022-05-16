@@ -12,13 +12,17 @@ runtime=60
 
 [seq-read-4k-1G] 
 rw=read
+stonewall 
 
 [random-write-4k-1G] 
 rw=randwrite
+stonewall 
 
 [seq-write-4k-1G] 
 rw=write
+stonewall 
 
 [rwmix-50r-50w-4k-1G] 
 rw=randrw
 rwmixread=50
+stonewall 
