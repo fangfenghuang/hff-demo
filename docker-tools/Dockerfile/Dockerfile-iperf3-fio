@@ -18,16 +18,16 @@ RUN apt-get update \
     && apt-get install gcc -y --allow-unauthenticated \
     && apt-get install wget -y --allow-unauthenticated
 
-RUN wget http://brick.kernel.dk/snaps/fio-3.30.tar.gz --no-check-certificate
+RUN wget http://brick.kernel.dk/snaps/fio-2.2.10.tar.gz --no-check-certificate \
+    && tar -zxvf fio-2.2.10.tar.gz
 
-RUN  tar -zxvf fio-3.30.tar.gz \
+RUN  cd fio-2.2.10 \
     && cd fio-3.30 \
     && ./configure \
     && make \
     && make install \
-    && rm -rf fio-3.30.tar.gz
-    
+    && rm -rf fio-2.2.10.tar.gz
+
+CMD  ["/bin/sh","-c","netserver -p 4444 -4; iperf3 -s -i 1;"]
 
 # docker build -t hff-fio-iperf:v0.1 .
-
-

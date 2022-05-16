@@ -1,0 +1,125 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qperf-server-kata
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: qperf-server-kata
+  template:
+    metadata:
+      labels:
+        app: qperf-server-kata
+    spec:
+      runtimeClassName: kata
+      containers:
+      - image: "arjanschaaf/centos-qperf"
+        args: ["-lp", "4000"]
+        imagePullPolicy: "IfNotPresent"
+        name: "qperf-server-kata"
+        ports:
+        - containerPort: 4000
+          name: "p1udp"
+          protocol: UDP
+        - containerPort: 4000
+          name: "p1tcp"
+          protocol: TCP
+        - containerPort: 4001
+          name: "p2tcp"
+          protocol: TCP
+        - containerPort: 4001
+          name: "p2udp"
+          protocol: UDP
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "qperf-server-kata"
+spec:
+  selector:
+    k8s-app: "qperf-server-kata"
+  ports:
+  - name: "p1udp"
+    port: 4000
+    targetPort: 4000
+    protocol: UDP
+  - name: "p1tcp"
+    port: 4000
+    targetPort: 4000
+    protocol: TCP
+  - name: "p2udp"
+    port: 4001
+    targetPort: 4001
+    protocol: UDP
+  - name: "p2tcp"
+    port: 4001
+    targetPort: 4001
+    protocol: TCP
+
+
+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qperf-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: qperf-server
+  template:
+    metadata:
+      labels:
+        app: qperf-server
+    spec:
+      containers:
+      - image: "arjanschaaf/centos-qperf"
+        args: ["-lp", "4000"]
+        imagePullPolicy: "IfNotPresent"
+        name: "qperf-server"
+        ports:
+        - containerPort: 4000
+          name: "p1udp"
+          protocol: UDP
+        - containerPort: 4000
+          name: "p1tcp"
+          protocol: TCP
+        - containerPort: 4001
+          name: "p2tcp"
+          protocol: TCP
+        - containerPort: 4001
+          name: "p2udp"
+          protocol: UDP
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: "qperf-server"
+spec:
+  selector:
+    k8s-app: "qperf-server"
+  ports:
+  - name: "p1udp"
+    port: 4000
+    targetPort: 4000
+    protocol: UDP
+  - name: "p1tcp"
+    port: 4000
+    targetPort: 4000
+    protocol: TCP
+  - name: "p2udp"
+    port: 4001
+    targetPort: 4001
+    protocol: UDP
+  - name: "p2tcp"
+    port: 4001
+    targetPort: 4001
+    protocol: TCP

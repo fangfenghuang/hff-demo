@@ -1,0 +1,33 @@
+FROM sirot/netperf-latest
+
+RUN wget http://brick.kernel.dk/snaps/fio-2.2.10.tar.gz --no-check-certificate \
+    && tar -zxvf fio-2.2.10.tar.gz
+
+RUN apt-get update \
+    && apt-get install libaio-dev -y --allow-unauthenticated \
+    && apt-get install gcc -y --allow-unauthenticated \
+    && apt-get install wget -y --allow-unauthenticated \
+   && apt-get install libcanberra-gtk-module
+
+RUN  cd fio-2.2.10 \
+    && ./configure --enable-gfio \
+    && make fio \
+    && make gfio \
+    && make install \
+    && rm -rf fio-2.2.10.tar.gz \
+    && ln -s /usr/local/bin/fio /usr/bin/fio \
+    && ln -s /usr/local/bin/gfio /usr/bin/gfio 
+
+CMD ["/usr/local/bin/fio", "-S"]
+
+
+# RUN apt-get install libcanberra-gtk-module \
+#     && apt-get install gfio
+
+
+
+# docker build -f Dockerfile-iperf-fio-gfio -t hff-iperf-fio-gfio:v0.1 .
+
+# ctr -n k8s.io run  -t --rm hff-iperf-fio-gfio:v0.1 hfftest sh
+
+# gfio

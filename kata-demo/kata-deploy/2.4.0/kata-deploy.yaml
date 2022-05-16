@@ -14,6 +14,13 @@ spec:
           name: kata-deploy
     spec:
       serviceAccountName: kata-label-node
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kata-worker
+                operator: Exists
       containers:
       - name: kube-kata
         image: quay.io/kata-containers/kata-deploy:2.4.0

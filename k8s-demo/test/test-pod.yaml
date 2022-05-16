@@ -14,9 +14,7 @@ spec:
     volumeMounts:
     - mountPath: /test
       name: test-volume
-    command:
-    - sleep
-    - "999d"
+    tty: true
     resources:
       limits:
         memory: "2Gi"
@@ -41,9 +39,7 @@ spec:
     volumeMounts:
     - mountPath: /test
       name: test-volume
-    command:
-    - sleep
-    - "999d"
+    tty: true
     resources:
       limits:
         memory: "2Gi"

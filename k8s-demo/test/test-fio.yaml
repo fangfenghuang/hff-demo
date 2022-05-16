@@ -1,0 +1,54 @@
+# fio
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-runc
+spec:
+  nodeName: telecom-k8s-phy01
+  containers:
+  - name: fio-runc
+    image: xridge/fio:latest
+    imagePullPolicy: IfNotPresent
+    volumeMounts:
+    - mountPath: /test
+      name: test-volume
+    command:
+    - sleep
+    - "99d"
+    resources:
+      limits:
+        memory: "2Gi"
+        cpu: "1"
+  volumes:
+  - name: test-volume
+    hostPath:
+      path: /hff/test/runc
+      type: Directory
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-kata
+spec:
+  nodeName: telecom-k8s-phy01
+  runtimeClassName: kata
+  containers:
+  - name: fio-kata
+    image: xridge/fio:latest
+    imagePullPolicy: IfNotPresent
+    volumeMounts:
+    - mountPath: /test
+      name: test-volume
+    command:
+    - sleep
+    - "99d"
+    resources:
+      limits:
+        memory: "2Gi"
+        cpu: "1"
+  volumes:
+  - name: test-volume
+    hostPath:
+      path: /hff/test/kata
+      type: Directory
