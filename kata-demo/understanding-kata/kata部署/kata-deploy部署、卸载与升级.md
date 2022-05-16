@@ -33,7 +33,39 @@ ln -s /opt/kata/bin/kata-monitor /usr/bin/kata-monitor
 - 需要注意的是kata-deploy重启可能会导致默认的configuration.toml文件恢复默认配置，因此使用的是优先级更高的/etc/kata-containers/configuration.toml
 - 使用ctr run创建的容器默认使用的是-qemu配置（/opt/kata/share/defaults/kata-containers/configuration-qemu.toml），如果需要使用ctr run测试，请同步配置到-qemu配置，或重定向shim链接到新的文件下
 
+## 部署kata-monitor
+详情见[[kata-monitor监控]]
+### kata节点运行kata-monitor守护进程
+```bash
+[root@localhost ~]# cat /etc/systemd/system/kata-monitor.service
+[Unit]
+Description=kata monitor
 
+[Service]
+ExecStart=/opt/kata/bin/kata-monitor -listen-address 0.0.0.0:8090
+Restart=always
+StartLimitInterval=0
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+
+### promethues增加scrape_configs
+```bash
+- job_name: 'kata'
+    static_configs:
+    - targets: ['<kata节点IP>:8090']
+```
+
+### 导入 Grafana dashborad
+```bash
+$ curl -XPOST -i <grafana节点IP>:3000/api/dashboards/import \
+    -u admin:admin \
+    -H "Content-Type: application/json" \
+	-d "{\"dashboard\":$(curl -sL https://raw.githubusercontent.com/kata-containers/kata-containers/main/docs/how-to/data/dashboard.json )}"
+```
 ## 检查：
 ```bash
 [root@rqy-k8s-1 ~]# kata-runtime check

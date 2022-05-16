@@ -1,5 +1,32 @@
 [TOC]
 
+# 组件
+- Prometheus Server: 用于收集和存储时间序列数据。
+- Client Library: 客户端库，为需要监控的服务生成相应的 metrics 并暴露给 Prometheus server。当Prometheus server 来 pull 时，直接返回实时状态的 metrics。对于机器层面的 metrices，需要使用 node exporter。
+- Push Gateway: 主要用于短期的 jobs。
+- Exporters: 用于暴露已有的第三方服务的 metrics 给 Prometheus。
+- Alertmanager: 从 Prometheus server 端接收到 alerts 后，会进行去除重复数据，分组，并路由到对收的接受方式，发出报警。常见的接收方式有：电子邮件，pagerduty，OpsGenie, webhook 等。
+
+
+
+# curl
+echo "hfftest 111" |curl --data-binary @- http://10.19.0.13:9091/metrics/job/schedulerStatus/instance/tztest
+
+curl -X POST -g 'http://127.0.0.1:9090/api/v1/admin/tsdb/delete_series?match[]=scheduler_effective_dynamic_schedule_count' 
+
+ curl -X POST -g 'http://10.19.0.13:9090/api/v1/admin/tsdb/delete_series?match[]={job="schedulerStatus"}'
+
+## 热加载
+```shell
+curl -XPOST <prometheus-url>/-/reload
+```
+
+# pushgateway
+
+
+# Grafana
+
+
 # 指标
 ## 指标类型
 Counter（计数器）对数据只增不减
@@ -30,18 +57,3 @@ Prometheus为不同的数据提供了非常多的计算函数，其中有个小�
 		○ 请求持久时长
 		○ 传输的数据字节数
 		○ 瞬时资源使用百分比
-
-# curl
-echo "hfftest 111" |curl --data-binary @- http://10.19.0.13:9091/metrics/job/schedulerStatus/instance/tztest
-
-curl -X POST -g 'http://127.0.0.1:9090/api/v1/admin/tsdb/delete_series?match[]=scheduler_effective_dynamic_schedule_count' 
-
- curl -X POST -g 'http://10.19.0.13:9090/api/v1/admin/tsdb/delete_series?match[]={job="schedulerStatus"}'
-
-
-```shell
-curl -XPOST <prometheus-url>/-/reload
-```
-# pushgateway
-
-

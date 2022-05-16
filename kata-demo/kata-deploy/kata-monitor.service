@@ -2,7 +2,7 @@
 Description=kata monitor
 
 [Service]
-ExecStart=/opt/kata/bin/kata-monitor
+ExecStart=/opt/kata/bin/kata-monitor -listen-address 0.0.0.0:8090
 Restart=always
 StartLimitInterval=0
 RestartSec=10

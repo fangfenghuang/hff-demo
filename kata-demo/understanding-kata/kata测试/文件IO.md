@@ -40,6 +40,7 @@ rw=randrw
 rwmixread=50
 ```
 
+# fio jobfile.fio
 ```bash
 fio jobfile.fio
 ```
@@ -51,8 +52,22 @@ fio jobfile.fio
 |顺序写     |  96691(96.7k) | 46.3k | 50.5k
 |混合随机读写| 40594/40530(40.5k) | 22.7k/22.7k | 21.4k/21.4k
 
+## gfio图形界面
+```bash
+# fio -S
+```
 
-## 测试数据
+```bash
+# gfio
+```
+### host
+![](../images/gfio-host-1.png)
+
+### runc
+
+
+
+## 附件
 ### host
 ```bash
 [root@telecom-k8s-phy01 test]# fio jobfile.fio
