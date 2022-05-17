@@ -72,18 +72,60 @@ spec:
 ```
 
 
-```bash
-[root@telecom-k8s-phy01 hff]# kubectl get pod -o wide
-NAME                                 READY   STATUS    RESTARTS   AGE     IP               NODE                NOMINATED NODE   READINESS GATES
-qperf-server-kata-5d9bffcf97-gw6xb   1/1     Running   0          4d6h    10.196.192.79    telecom-k8s-phy01   <none>           <none>
-qperf-server-z5rwk                   1/1     Running   0          4d22h   10.196.192.101   telecom-k8s-phy01   <none>           <none>
-test-kata                            1/1     Running   0          4d4h    10.196.192.195   telecom-k8s-phy01   <none>           <none>
-test-kata-httpd                      1/1     Running   0          11s     10.196.142.171   telecom-k8s-phy02   <none>           <none>
-test-runc                            1/1     Running   0          4d4h    10.196.192.144   telecom-k8s-phy01   <none>           <none>
-test-runc-httpd                      1/1     Running   0          17s     10.196.142.131   telecom-k8s-phy02   <none>           <none>
-[root@telecom-k8s-phy01 hff]# kubectl get node
-NAME                STATUS   ROLES    AGE     VERSION
-telecom-k8s-phy01   Ready    master   26d     v1.17.2
-telecom-k8s-phy02   Ready    master   26d     v1.17.2
 
+
+```bash
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: test-runc-httpd
+spec:
+  selector:
+    matchLabels:
+      app: test-runc-httpd
+  template:
+    metadata:
+      labels:
+        app: test-runc-httpd
+    spec:
+      nodeName: telecom-k8s-phy02
+      containers:
+      - name: httpd-runc
+        image: httpd
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            memory: "256Gi"
+            cpu: "64"
+          requests:
+            memory: "2Gi"
+            cpu: "1"
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: test-kata-httpd
+spec:
+  selector:
+    matchLabels:
+      app: test-kata-httpd
+  template:
+    metadata:
+      labels:
+        app: test-kata-httpd
+    spec:
+      nodeName: telecom-k8s-phy02
+      containers:
+      - name: httpd-kata
+        image: httpd
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            memory: "256Gi"
+            cpu: "64"
+          requests:
+            memory: "2Gi"
+            cpu: "1"
 ```
+
