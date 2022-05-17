@@ -124,7 +124,9 @@ https://github.com/kata-containers/kata-containers/blob/main/docs/how-to/how-to-
   enable_annotations = []
 
 
-# runtime 名字怎么写？
+# 关于runtime 名字怎么写？
+http://liubin.org/kata-dev-book/src/runtime-arch.html
+
 在 K8s 和 containerd 中，我们会看到很多用于设置 runtime 的地方，比如 RuntimeClass 、Pod 的 runtimeClassName 定义，以及 ctr run --runtime io.containerd.run.kata.v2 和 crictl runp -r kata ，里面都有参数指定运行时的名字。
 
 Pod 的 runtimeClassName 属性会查找同名的 RuntimeClass 资源

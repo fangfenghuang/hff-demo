@@ -94,14 +94,23 @@
 
 ![](../images/20220330163647.png)
 
-- Kata Containers 的虚拟机里会有一个特殊的 Init 进程负责管理虚拟机里面的用户容器，并且只为这些容器开启 Mount Namespace。所以，这些用户容器之间，原生就是共享 Network 以及其他 Namespace 的。
-- 此外，为了跟上层编排框架比如 Kubernetes 进行对接，Kata Containers 项目会启动一系列跟用户容器对应的 shim 进程，来负责操作这些用户容器的生命周期。当然，这些操作，实际上还是要靠虚拟机里的 Init 进程来帮你做到。
-- 为了能够对这个虚拟机的 I/O 性能进行优化，Kata Containers 也会通过 vhost 技术（比如：vhost-user）来实现 Guest 与 Host 之间的高效的网络通信，并且使用 PCI Passthrough （PCI 穿透）技术来让 Guest 里的进程直接访问到宿主机上的物理设备。
-
-
-## Kata Containers 2.x vs 1.x
 ![](../images/20220330151947.png)
 
+整个kata生态系统分为 3 部分：
+
+- 容器调度系统（如 K8s）
+- 上层 runtime，这一层主要是实现了 CRI 接口，然后使用下层 runtime 对容器进行管理。上层 runtime 典型代表有 containerd 和 CRI-O。
+- 下层 runtime，这一层才会直接负责容器的管理，典型代表为 runc 和 Kata Containers。
+
+对 Kata Containers 来说，Kata Containers 会接收来自上层 runtime 的请求，实现容器的创建、删除等管理工作。
+
+同时，上图中也有 3 个通信协议存在：
+
+- CRI： 容器运行时接口，这是 k8s（实际上是 kubelet）和 上层 runtime 之间的通信接口
+- shim v2：上层 runtime （如 containerd ）和 下层 runtime（如 Kata Containers ） 之间的通信接口
+- agent 协议：这是 Kata Containers 内部的协议，用于 Kata Containers 的 shim 进程和 guest 内的 agent 之间的通信。
+
+## Kata Containers 2.x vs 1.x
 
 2.x 在开发上主要有以下几个重大的变更点：
 
@@ -115,54 +124,18 @@
 
 在 Kata 1.x 中，面向用户的主要组件是运行时（kata-runtime）。对于 Kata 2.0，主要组件是 Kata containerd shim v2。 对“ Kata 运行时”的任何提及均应指代 Kata containerd shim v2。
 
-## 启动运行流程
-docker/kubelet通过接口调用containerd-shim-kata-v2创建pod/container，
-container-shim-kata-v2为每个容器/pod创建一个QEMU/KVM虚拟机。
-虚拟机中启动一个极简的kernel，最终运行一个用户态程序kata-agent。kata-agent通过VSOCK向host上暴露一个gRPC接口，container-shim-kata-v2通过这个接口连接上kata-agent，进而实现对虚拟机内部的管理。这个gRPC接口既用于传输管理命令，也用于传输stdin，stdout，stderr等流。
-kata-agent在虚拟机中通过libcontainer管理container。启动container所需要的OCI bundle可以通过block device或者mount point的形式从host上挂上去。
+## kata Runtime (shimv2)
+runtime 为运行在宿主机上的、支持 shim v2 协议的进程。在这系列文章中，多数情况下可以将 runtime 、shimv2 视为同一内容。
 
-**关于虚拟机在host上的存在形式：**
+整个 Runtime ，其可执行程序为 containerd-shim-kata-v2，也即 shim 进程，这也是 Kata Containers 的入口点。Runtime 对上接受 containerd 的请求（通过 shimv2 “协议”），对 guest 来说，通过 guest 内的 agent 来控制 guest 内容器的创建、删除等管理。
 
-一个QEMU/KVM虚拟机本质上就是host上的一个进程
-虚拟机的一个VCPU本质上是host的一个线程，虚拟机进程中除了VCPU线程还有IO管理等线程。 * 虚拟机使用的内存来自进程的虚拟地址空间。
-这边的agent干的事情和runC基本上是差不多的，区别就在于它要知道自己是在一个VM里面，并且和再上一层的软件通信要走VSOCK。
+Runtime 和 agent 之间的采用了 ttrpc 协议通信，这是一个使用了 protocol buffer 编解码方式的类似 gRPC 的通信方式。该协议由 containerd 创建，用于 containered 和底层 runtime 之间的通信。在 Kata Containers 中， runtime 和 agent 也通过 ttrpc 通信。
 
-## 接口调用
-
-- 提交创建请求
-- api server将api对象被存储到etcd
-- Controller manager创建pod
-- Scheduler监听pod变化，执行调度，绑定节点
-- Kubelet监听pod绑定事件，接管pod> 通过CRI接口找到 containerd或者cri-o（这里kubelet作为cri client）
-- Containerd将cri请求变成一个OCI spec，交给oci runtime(即containerd-shim-kata-v2)：当 containerd 拿到一个请求的时候，它会首先创建一个 shim-v2（PodSandbox）,每一个 Pod 都会有一个 shim-v2 来为 containerd/CRI-O 来执行各种各样的操作。
-- shim-v2 会为这个 Pod 启动一个虚拟机，在里面运行着一个 linux kernel
-
->- 当用户指定运行时名称时， containerd 将其转换为 shim 的二进制名称，如：io.containerd.runc.v1->containerd-shim-runc-v1或io.containerd.kata.v2->containerd-shim-kata-v2；
->- 每个shim必须实现一个start子命令。此命令将启动新的shims。
->- 启动命令必须向 shim 返回一个地址，以便 containerd 为容器操作发出 API 请求。
-
-
-- 然后我们会把这个容器的 spec 以及这个容器本身打包的存储，包括 rootfs 和文件系统，交给这个PodSandbox。这个 PodSandbox 会在虚机中由 kata-agent 把容器启动起来；
-
-- kata-agent 生成容器进程，kata-agent 是在虚拟机内部作为守护程序运行的代理进程。kata-agent 使用 VIRTIO 串行或 VSOCK 接口在虚拟机中运行 ttRPC 服务器，该接口由 QEMU 生成一个 Socket 文件暴露给宿主机。shimv2 使用 ttRPC 协议与代理进程进行通信。该协议允许运行时将容器管理命令发送到代理进程。该协议还用于在容器和管理引擎（例如 CRI-O 或 Containerd）之间承载 I/O 流（stdout，stderr，stdin）。
-
-- 对于任何给定的容器，该容器中的初始化过程和所有可能执行的命令以及它们相关的 I/O 流都需要通过 QEMU 导出的 VSOCK 接口。
-
-
-
-注：
-> 在 shimv2 之前 Kata 1.x，我们需要为每个容器和 Pod 沙箱本身创建一个 containerd-shim 和 kata-shim，以及在 VSOCK 不可用时创建一个可选的 kata-proxy。借助 shimv2，Kubernetes 可以启动 Pod 和 OCI 兼容的容器，每个 Pod 可以使用一个 Shim（shimv2）而不是 2N+1 Shim，并且即使没有 VSOCK 也不用使用独立的 kata-proxy 程序。
-
-
-
-```bash
-root     22324  0.0  0.2 946312 23760 ?        Sl   Apr12   0:21 /opt/kata/bin/containerd-shim-kata-v2 -namespace k8s.io -address /run/containerd/containerd.sock -publish-binary /usr/bin/containerd -id 3b54b3b02fc7f6905d01aedfc4eb209cfb11fd9136006ed6e11e1e26c0f48562
-root     26580  0.0  0.0 113364  5276 ?        Sl   Apr12   0:24 /usr/bin/containerd-shim-runc-v2 -namespace k8s.io -id 721153525c46112a713cbca788389791eb2a6e5ad526f43df162fc4cf7656c44 -address /run/containerd/containerd.sock
-```
-
-
+http://liubin.org/kata-dev-book/src/runtime-arch.html
 
 ## kata-agent
+agent 可以作为 guest init 进程启动，也可以使用 systemd 等作为 init ，agent 作为普通进程启动。
+http://liubin.org/kata-dev-book/src/agent-arch.html
 
 https://github.com/kata-containers/kata-containers/tree/main/src/agent
 

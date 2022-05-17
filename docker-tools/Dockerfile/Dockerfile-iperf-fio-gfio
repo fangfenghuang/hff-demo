@@ -21,7 +21,9 @@ RUN apt-get update \
     && apt-get install gcc -y --allow-unauthenticated \
     && apt-get install wget -y --allow-unauthenticated
 
-RUN apt-get install gnome-core-devel  libgtk2.0-dev libcanberra-gtk-module -y --allow-unauthenticated
+RUN apt-get install pkg-config -y --allow-unauthenticated \
+    && apt-get install gir1.2-pango-1.0  libgtk2.0-0 libspice-client-glib-2.0-dev -y --allow-unauthenticated \
+    && apt-get install gtk+-2.0 -y --allow-unauthenticated
 
 RUN  cd fio-2.2.10 \
     && ./configure --enable-gfio \
@@ -42,3 +44,10 @@ CMD ["fio", "-S"]
 # ctr -n k8s.io run  -t --rm hff-iperf-fio-gfio:v0.1 hfftest sh
 
 # gfio
+
+
+
+./configure: 1051: ./configure: pkg-config: not found
+./configure: 1058: ./configure: pkg-config: not found
+configure: gtk and gthread not found
+The command '/bin/sh -c cd fio-2.2.10     && ./configure --enable-gfio     && make fio     && make gfio     && make install     && rm -rf fio-2.2.10.tar.gz     && ln -s /usr/local/bin/fio /usr/bin/fio     && ln -s /usr/local/bin/gfio /usr/bin/gfio' returned a non-zero code: 1
