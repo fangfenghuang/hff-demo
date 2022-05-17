@@ -53,14 +53,15 @@ QPS：每秒处理的请求数
 
 
 ## 64线程20000连接数3min测试结果:
-|             | QPS       |   TPS    | Latency(avg) |    error    |
-|-------------|-----------|----------|--------------|-------------|
-|宿主机服务端  | 235282.32 | 64.22MB  | 4.63ms   | read 1365980, write 137402, timeout 11
-|runc容器服务端| 104251.00 | 26.85MB  | 5.30ms   | read 1802279, write 158301, timeout 165
-|kata容器服务端| 99475.75  | 25.62MB  | 5.55ms   | read 1859794, write 157643, timeout 158
+|              | QPS       |   TPS    | Latency(avg) |    error    |
+|--------------|-----------|----------|--------------|-------------|
+|host          | 235282.32 | 64.22MB  | 4.63ms   | read 1365980, write 137402, timeout 11
+|runc容器       | 104251.00 | 26.85MB  | 5.30ms   | read 1802279, write 158301, timeout 165
+|kata容器(true) |
 
 ![](../images/wrk-t64-c20000.png)
 
+![](../images/wrk-t64-c20000-pod.png)
 
 # 测试数据
 ## qperf
@@ -272,7 +273,6 @@ Running 3m test @ http://10.96.0.2:40080/
 Requests/sec: 235282.32
 Transfer/sec:     64.22MB
 
-
 # runc
 [root@telecom-k8s-phy03 wrk-master]# ./wrk -t64 -c20000 -d3m http://10.96.0.2:21020/
 Running 3m test @ http://10.96.0.2:21020/
@@ -285,19 +285,6 @@ Running 3m test @ http://10.96.0.2:21020/
 Requests/sec: 104251.00
 Transfer/sec:     26.85MB
 
-
-# kata
-[root@telecom-k8s-phy03 wrk-master]# ./wrk -t64 -c20000 -d3m http://10.96.0.2:28394/
-Running 3m test @ http://10.96.0.2:28394/
-  64 threads and 20000 connections
-  Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency     5.55ms   24.44ms   1.81s    95.84%
-    Req/Sec     1.57k     1.32k   26.18k    72.43%
-  17913983 requests in 3.00m, 4.51GB read
-  Socket errors: connect 0, read 1859794, write 157643, timeout 158
-Requests/sec:  99475.75
-Transfer/sec:     25.62MB
-
-
+# kata(true)
 
 ```

@@ -115,6 +115,7 @@ spec:
       labels:
         app: test-kata-httpd
     spec:
+      runtimeClassName: kata
       nodeName: telecom-k8s-phy02
       containers:
       - name: httpd-kata
@@ -128,4 +129,32 @@ spec:
             memory: "2Gi"
             cpu: "1"
 ```
+
+[root@telecom-k8s-phy02 hff]# kubectl get svc
+NAME                   TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)
+test-kata-httpd        NodePort    10.196.97.40     <none>        80:28394/TCP
+test-runc-httpd        NodePort    10.196.26.12     <none>        80:21020/TCP 
+
+
+```bash
+./wrk -t64 -c20000 -d3m http://10.96.0.2:40080/ >> wrk-t64-c20000.log
+sleep 3m
+./wrk -t64 -c20000 -d3m http://10.96.0.2:21020/ >> wrk-t64-c20000.log
+sleep 3m
+./wrk -t64 -c20000 -d3m http://10.96.0.2:28394/ >> wrk-t64-c20000.log
+
+
+
+
+```
+
+
+
+sed -i -e 's/^sandbox_cgroup_only.*$/sandbox_cgroup_only=false/g' /etc/kata-containers/configuration.toml
+
+kubectl get pod |grep test-kata-httpd| awk '{print $1}' | xargs -I {} kubectl delete pod {}
+
+sleep 3m
+
+./wrk -t64 -c20000 -d3m http://10.96.0.2:28394/
 
