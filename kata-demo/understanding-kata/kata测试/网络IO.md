@@ -52,15 +52,14 @@ QPS：每秒处理的请求数
 -R, --rate        <T>  工作速率（吞吐量）即每个线程每秒钟完成的请求数
 
 
-## 测试结果:
+## 64线程20000连接数3min测试结果:
 |             | QPS       |   TPS    | Latency(avg) |    error    |
 |-------------|-----------|----------|--------------|-------------|
-|宿主机服务端  | 239812.25 | 65.45MB  | 4.54ms   | read 1496147, write 128947, timeout 104  
-|runc容器服务端| 102160.54 | 26.32MB  | 5.37ms   | read 1796811, write 156028, timeout 176
-|kata容器服务端| 99791.87  | 25.70MB  | 5.49ms   | read 1829144, write 156527, timeout 131
+|宿主机服务端  | 235282.32 | 64.22MB  | 4.63ms   | read 1365980, write 137402, timeout 11
+|runc容器服务端| 104251.00 | 26.85MB  | 5.30ms   | read 1802279, write 158301, timeout 165
+|kata容器服务端| 99475.75  | 25.62MB  | 5.55ms   | read 1859794, write 157643, timeout 158
 
-
-
+![](../images/wrk-t64-c20000.png)
 
 
 # 测试数据
@@ -266,36 +265,39 @@ tcp_lat:
 Running 3m test @ http://10.96.0.2:40080/
   64 threads and 20000 connections
   Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency     4.54ms   27.04ms   1.90s    96.86%
-    Req/Sec     3.79k     2.12k   77.73k    77.34%
-  43190350 requests in 3.00m, 11.51GB read
-  Socket errors: connect 0, read 1496147, write 128947, timeout 104
-Requests/sec: 239812.25
-Transfer/sec:     65.45MB
+    Latency     4.63ms   27.66ms   1.99s    97.07%
+    Req/Sec     3.76k     2.33k   51.04k    81.79%
+  42374542 requests in 3.00m, 11.29GB read
+  Socket errors: connect 0, read 1365980, write 137402, timeout 113
+Requests/sec: 235282.32
+Transfer/sec:     64.22MB
+
 
 # runc
 [root@telecom-k8s-phy03 wrk-master]# ./wrk -t64 -c20000 -d3m http://10.96.0.2:21020/
 Running 3m test @ http://10.96.0.2:21020/
   64 threads and 20000 connections
   Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency     5.37ms   22.73ms   1.83s    95.97%
-    Req/Sec     1.61k     1.32k   23.46k    70.90%
-  18399148 requests in 3.00m, 4.63GB read
-  Socket errors: connect 0, read 1796811, write 156028, timeout 176
-Requests/sec: 102160.54
-Transfer/sec:     26.32MB
+    Latency     5.30ms   23.22ms   1.81s    96.07%
+    Req/Sec     1.64k     1.32k   25.39k    69.10%
+  18774201 requests in 3.00m, 4.72GB read
+  Socket errors: connect 0, read 1802279, write 158301, timeout 165
+Requests/sec: 104251.00
+Transfer/sec:     26.85MB
+
 
 # kata
 [root@telecom-k8s-phy03 wrk-master]# ./wrk -t64 -c20000 -d3m http://10.96.0.2:28394/
 Running 3m test @ http://10.96.0.2:28394/
   64 threads and 20000 connections
   Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency     5.49ms   23.69ms   2.00s    95.77%
-    Req/Sec     1.57k     1.29k   29.10k    70.56%
-  17972464 requests in 3.00m, 4.52GB read
-  Socket errors: connect 0, read 1829144, write 156527, timeout 131
-Requests/sec:  99791.87
-Transfer/sec:     25.70MB
+    Latency     5.55ms   24.44ms   1.81s    95.84%
+    Req/Sec     1.57k     1.32k   26.18k    72.43%
+  17913983 requests in 3.00m, 4.51GB read
+  Socket errors: connect 0, read 1859794, write 157643, timeout 158
+Requests/sec:  99475.75
+Transfer/sec:     25.62MB
+
 
 
 ```
