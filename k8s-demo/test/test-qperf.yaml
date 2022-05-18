@@ -14,10 +14,18 @@ spec:
         app: qperf-server-kata
     spec:
       runtimeClassName: kata
+      nodeName: telecom-k8s-phy02
       containers:
       - image: "arjanschaaf/centos-qperf"
         args: ["-lp", "4000"]
         imagePullPolicy: "IfNotPresent"
+        resources:
+          limits:
+            memory: "240Gi"
+            cpu: "63"
+          requests:
+            memory: "1Gi"
+            cpu: "1"
         name: "qperf-server-kata"
         ports:
         - containerPort: 4000
@@ -32,7 +40,43 @@ spec:
         - containerPort: 4001
           name: "p2udp"
           protocol: UDP
-      restartPolicy: Always
+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qperf-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: qperf-server
+  template:
+    metadata:
+      labels:
+        app: qperf-server
+    spec:
+      nodeName: telecom-k8s-phy02
+      containers:
+      - image: "arjanschaaf/centos-qperf"
+        args: ["-lp", "4000"]
+        imagePullPolicy: "IfNotPresent"
+        name: "qperf-server"
+        ports:
+        - containerPort: 4000
+          name: "p1udp"
+          protocol: UDP
+        - containerPort: 4000
+          name: "p1tcp"
+          protocol: TCP
+        - containerPort: 4001
+          name: "p2tcp"
+          protocol: TCP
+        - containerPort: 4001
+          name: "p2udp"
+          protocol: UDP
+
 
 ---
 apiVersion: v1
@@ -61,43 +105,6 @@ spec:
     protocol: TCP
 
 
-
-
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: qperf-server
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: qperf-server
-  template:
-    metadata:
-      labels:
-        app: qperf-server
-    spec:
-      containers:
-      - image: "arjanschaaf/centos-qperf"
-        args: ["-lp", "4000"]
-        imagePullPolicy: "IfNotPresent"
-        name: "qperf-server"
-        ports:
-        - containerPort: 4000
-          name: "p1udp"
-          protocol: UDP
-        - containerPort: 4000
-          name: "p1tcp"
-          protocol: TCP
-        - containerPort: 4001
-          name: "p2tcp"
-          protocol: TCP
-        - containerPort: 4001
-          name: "p2udp"
-          protocol: UDP
-      restartPolicy: Always
-
 ---
 apiVersion: v1
 kind: Service
@@ -123,3 +130,22 @@ spec:
     port: 4001
     targetPort: 4001
     protocol: TCP
+
+
+qperf-server-kata-5d9bffcf97-gw6xb   1/1     Running             0          4d11h   10.196.192.79    telecom-k8s-phy01   <none>           <none>
+qperf-server-z5rwk                   1/1     Running             0          5d4h    10.196.192.101   telecom-k8s-phy01   <none>           <none>
+
+
+
+```bash
+#!/usr/bin/env bash
+echo qperf-host(10.96.0.2):
+qperf 10.96.0.2 -oo msg_size:1:256K:*64 -vu tcp_bw tcp_lat >> qperf-256k.log
+sleep 1m
+echo qperf-runc(10.196.142.181):
+qperf 10.196.142.181 -lp 4000 -ip 4001 -oo msg_size:1:256K:*64 -vu tcp_bw tcp_lat>> qperf-256k.log
+sleep 1m
+echo qperf-kata(10.196.142.191):
+qperf 10.196.142.191 -lp 4000 -ip 4001 -oo msg_size:1:256K:*64 -vu tcp_bw tcp_lat>> qperf-256k.log
+
+```

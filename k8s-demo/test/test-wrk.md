@@ -94,13 +94,7 @@ spec:
       - name: httpd-runc
         image: httpd
         imagePullPolicy: IfNotPresent
-        resources:
-          limits:
-            memory: "256Gi"
-            cpu: "64"
-          requests:
-            memory: "2Gi"
-            cpu: "1"
+
 ---
 kind: Deployment
 apiVersion: apps/v1
@@ -123,10 +117,10 @@ spec:
         imagePullPolicy: IfNotPresent
         resources:
           limits:
-            memory: "256Gi"
-            cpu: "64"
+            memory: "240Gi"
+            cpu: "63"
           requests:
-            memory: "2Gi"
+            memory: "1Gi"
             cpu: "1"
 ```
 

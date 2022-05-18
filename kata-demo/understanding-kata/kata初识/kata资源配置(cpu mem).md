@@ -1,6 +1,20 @@
  [TOC]
 
-# 配置
+ 资源的配置应分为两部分：对轻量级虚拟机的资源配置，即Host资源配置；对虚拟机内容器的配置，即Guest容器资源配置。
+
+
+# 注意事项（总结）
+- 一个Pod的最小规格是1C 256M，当低于 256M 时，会重置为 2G。，支持的最大内存规格是256GB。如果用户分配的内存规格超过256GB，可能会出现未定义的错误，安全容器暂不支持超过256GB的大内存场景。
+- Kata 配置文件中默认的 VM 大小为 1C 2G（不设置limit不是无限制）
+- Kata VM 中额外的资源是通过 hotplug 的方式实现，资源目前特指 CPU 和 Memory 两种；终 VM 的资源大小为 limit + default，其中 limit 为 Pod 声明的 limit，不包含 overhead 在内，default 为Kata 配置文件中的基础 VM 大小。（limit+default如果超出主机资源，会发生不可预测的错误）
+- 如果 pod 没有CPU限制，则增加default_vcpus可以提高性能。然而，对于许多线程，增加CPU限制并没有帮助，并且会让事情变得更糟。因此，根据经验：要提高性能，请使用 CPU 限制或default_vcpus 注释，但不能同时使用两者。 
+- SandboxCgroupOnly默认为false，此时kata容器虚拟机开销可能会占用过多主机资源。（实测fio测试可能会导致k8s节点异常）
+- 如果不设置request，则request的值和limit默认相等
+- Kata 对于资源并不是完全占用，不同的 Kata VM 之间会存在资源抢占现象。在此方面，Kata Containers 和传统容器的设计理念相同。
+
+
+
+# 一些需要知道的配置
 
 ## configuration.toml
 
@@ -12,7 +26,7 @@ default_maxvcpus
 
 default_memory=2048（默认）
 
-## 通过注释：
+## 通过注释修改配置：
 ```bash
 [plugins."io.containerd.grpc.v1.cri".containerd.runtimes.kata]
  runtime_type = "io.containerd.kata.v2"
@@ -57,10 +71,6 @@ overhead:
   memory: "100Mi"
   cpu: "100m"
 ```
-
-# 资源需求和限制
-
-如果 pod 没有 CPU 限制，则增加 default_vcpus 可以提高性能。然而，对于许多线程，增加 CPU 限制并没有帮助，并且会让事情变得更糟。因此，根据经验：**要提高性能，请使用 CPU 限制或default_vcpus 注释，但不能同时使用两者**。 
 
 
 
