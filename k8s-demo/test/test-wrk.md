@@ -74,55 +74,7 @@ spec:
 
 
 
-```bash
----
-kind: Deployment
-apiVersion: apps/v1
-metadata:
-  name: test-runc-httpd
-spec:
-  selector:
-    matchLabels:
-      app: test-runc-httpd
-  template:
-    metadata:
-      labels:
-        app: test-runc-httpd
-    spec:
-      nodeName: telecom-k8s-phy02
-      containers:
-      - name: httpd-runc
-        image: httpd
-        imagePullPolicy: IfNotPresent
 
----
-kind: Deployment
-apiVersion: apps/v1
-metadata:
-  name: test-kata-httpd
-spec:
-  selector:
-    matchLabels:
-      app: test-kata-httpd
-  template:
-    metadata:
-      labels:
-        app: test-kata-httpd
-    spec:
-      runtimeClassName: kata
-      nodeName: telecom-k8s-phy02
-      containers:
-      - name: httpd-kata
-        image: httpd
-        imagePullPolicy: IfNotPresent
-        resources:
-          limits:
-            memory: "240Gi"
-            cpu: "63"
-          requests:
-            memory: "1Gi"
-            cpu: "1"
-```
 
 [root@telecom-k8s-phy02 hff]# kubectl get svc
 NAME                   TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)
