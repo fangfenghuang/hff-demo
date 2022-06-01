@@ -1,0 +1,24 @@
+# permissions for end users to edit hffdemoes.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: hffdemo-editor-role
+rules:
+- apiGroups:
+  - hffapp.fangfenghuang.io
+  resources:
+  - hffdemoes
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - hffapp.fangfenghuang.io
+  resources:
+  - hffdemoes/status
+  verbs:
+  - get

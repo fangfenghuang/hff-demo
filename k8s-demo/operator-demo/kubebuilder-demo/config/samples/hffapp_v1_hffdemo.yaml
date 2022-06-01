@@ -1,0 +1,12 @@
+apiVersion: hffapp.fangfenghuang.io/v1
+kind: HffDemo
+metadata:
+  name: hffdemo-sample
+spec:
+  pvc: 
+    name: test-pvc
+    namespace: default
+  source: 
+    url: http://localhost:40080/install_kustomize.sh
+    hostPath: /home/kbuser/hff/main.go
+  destPath: /

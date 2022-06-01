@@ -1,0 +1,16 @@
+domain: fangfenghuang.io
+layout:
+- go.kubebuilder.io/v3
+projectName: kubebuilder-demo
+repo: github.com/fangfenghuang/kubebuilder-demo
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: fangfenghuang.io
+  group: hffapp
+  kind: HffDemo
+  path: github.com/fangfenghuang/kubebuilder-demo/api/v1
+  version: v1
+version: "3"
