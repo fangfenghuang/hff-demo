@@ -15,6 +15,9 @@
             - dockerd
             - --host=unix:///var/run/docker.sock
             - --host=tcp://0.0.0.0:8000
+            - --insecure-registry=harbor.caih.com
+            - --insecure-registry=harbor.caih.local
+            - --insecure-registry=10.10.12.204
           securityContext:
             privileged: true
           volumeMounts:
