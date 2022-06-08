@@ -30,14 +30,8 @@ type HffDemoSpec struct {
 
 	// Foo is an example field of HffDemo. Edit hffdemo_types.go to remove/update
 	// Foo string `json:"foo,omitempty"`
-	PVCName  string `json:"pvcName,omitempty"`
-	Source   string `json:"source,omitempty"`
-	DestPath string `json:"destPath,omitempty"`
-}
-
-type SourceType struct {
-	URL      string `json:"url,omitempty"`
-	HostPath string `json:"hostPath,omitempty"`
+	Unit string `json:"unit,omitempty"`
+	URL  string `json:"url,omitempty"`
 }
 
 const (

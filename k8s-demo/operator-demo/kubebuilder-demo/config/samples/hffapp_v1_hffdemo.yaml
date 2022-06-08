@@ -3,10 +3,16 @@ kind: HffDemo
 metadata:
   name: hffdemo-sample
 spec:
-  pvc: 
-    name: test-pvc
-    namespace: default
-  source: 
-    url: http://localhost:40080/install_kustomize.sh
-    hostPath: /home/kbuser/hff/main.go
-  destPath: /
+  unit: |-
+    [Unit]
+    Description=sample-test
+
+    [Service]
+    ExecStart=/opt/systemd-unit/sample-test.service -listen-address 0.0.0.0:80
+    Restart=always
+    StartLimitInterval=0
+    RestartSec=10
+
+    [Install]
+    WantedBy=multi-user.target
+  url: http://localhost:40080/test-package.tar
