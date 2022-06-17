@@ -13,6 +13,6 @@
       "path": "/usr/bin/kata-runtime"
     }
   },
-  "insecure-registries": ["harbor.caih.com","harbor.caih.local","10.208.11.110","harbor.caih.local"]
+  "insecure-registries": ["harbor.hff.com"]
 }
 

@@ -54,7 +54,7 @@ oom_score = 0
     stream_idle_timeout = "4h0m0s"
     enable_selinux = false
     selinux_category_range = 1024
-    sandbox_image = "harbor.caih.local/k8s.gcr.io/pause:3.1"
+    sandbox_image = "harbor.hff.local/k8s.gcr.io/pause:3.1"
     stats_collect_period = 10
     systemd_cgroup = false
     enable_tls_streaming = false
@@ -112,13 +112,13 @@ oom_score = 0
       [plugins."io.containerd.grpc.v1.cri".registry.mirrors]
         [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
           endpoint = ["https://registry-1.docker.io"]
-        [plugins."io.containerd.grpc.v1.cri".registry.mirrors."harbor.caih.local"]
-          endpoint = ["http://harbor.caih.local"]
-          [plugins."io.containerd.grpc.v1.cri".registry.mirrors."harbor.caih.local".tls]
+        [plugins."io.containerd.grpc.v1.cri".registry.mirrors."harbor.hff.local"]
+          endpoint = ["http://harbor.hff.local"]
+          [plugins."io.containerd.grpc.v1.cri".registry.mirrors."harbor.hff.local".tls]
             insecure_skip_verify = true
-        [plugins."io.containerd.grpc.v1.cri".registry.mirrors."harbor.caih.com"]
-          endpoint = ["http://harbor.caih.com"]
-          [plugins."io.containerd.grpc.v1.cri".registry.mirrors."harbor.caih.com".tls]
+        [plugins."io.containerd.grpc.v1.cri".registry.mirrors."harbor.hff.com"]
+          endpoint = ["http://harbor.hff.com"]
+          [plugins."io.containerd.grpc.v1.cri".registry.mirrors."harbor.hff.com".tls]
             insecure_skip_verify = true
         [plugins."io.containerd.grpc.v1.cri".registry.mirrors."10.96.0.1"]
           endpoint = ["http://10.96.0.1"]
